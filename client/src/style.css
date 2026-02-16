@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* 🔥 динамический фон */
+body {
+  background:
+    radial-gradient(circle at 20% 20%, var(--bg1), transparent 40%),
+    radial-gradient(circle at 80% 30%, var(--bg2), transparent 40%),
+    var(--bg-main);
+
+  color: var(--text);
+  min-height: 100vh;
+  transition: .4s;
+}
+
+
+/* стекло */
+.glass {
+  backdrop-filter: blur(20px);
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+}
+
+
+/* glow кнопка */
+.btn-glow {
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  box-shadow: 0 0 25px var(--glow);
+  transition: .25s;
+}
+.btn-glow:hover {
+  transform: scale(1.05);
+}
+.btn-exit {
+  --bg1: #ff2e2e;
+  --bg2: #b30000;
+  --glow: rgba(255, 0, 0, 0.7);
+
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  box-shadow: 0 0 40px var(--glow);
+  color: white;
+  border: none;
+  transition: .25s;
+}
+
+.btn-exit:hover {
+  box-shadow: 0 0 40px var(--glow);
+  transform: scale(1.05);
+}
+
+
+/* дефолт (blue) */
+:root {
+  --bg-main:#0b0f1a;
+  --bg1:#2563eb66;
+  --bg2:#9333ea66;
+  --card:rgba(255,255,255,0.06);
+  --glow:#3b82f6aa;
+  --text:#ffffff;
+}
