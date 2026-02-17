@@ -31,6 +31,7 @@ const password = ref("")
 const router = useRouter()
 
 async function register(){
+
   const { data, error } = await supabase.auth.signUp({
     email: email.value,
     password: password.value
@@ -38,18 +39,10 @@ async function register(){
 
   if(error) return alert(error.message)
 
-  const user = data.user
-
-  if(user){
-    await supabase.from("profiles").insert({
-      id: user.id,
-      username: "user_" + user.id.slice(0,6)
-    })
-  }
-
   alert("Аккаунт создан!")
   router.push("/setup-profile")
 }
+
 
 </script>
 
