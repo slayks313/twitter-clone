@@ -192,6 +192,7 @@ import { supabase } from "../lib/supabase"
 import { onMounted, onUnmounted } from "vue"
 import { getOnlineUsers } from "../composables/usePresence"
 
+
 const users = ref([])
 const messages = ref([])
 const newMessage = ref("")
@@ -224,6 +225,7 @@ onMounted(() => window.addEventListener("click", handleClickOutside))
 onUnmounted(() => window.removeEventListener("click", handleClickOutside))
 
 onMounted(async () => {
+  
 
   const { data } = await supabase.auth.getUser()
   userId.value = data.user?.id

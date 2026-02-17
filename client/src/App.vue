@@ -2,14 +2,16 @@
 import { onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { supabase } from "./lib/supabase"
-import { startPresence } from "./composables/usePresence"
+import { initPresence } from "./composables/usePresence"
 
 
 
 const router = useRouter()
 
+
+
 onMounted(() => {
-  startPresence()
+  initPresence()
 })
 
 onMounted(async () => {

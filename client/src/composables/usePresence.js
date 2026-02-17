@@ -5,14 +5,9 @@ const onlineUsers = ref(new Set())
 let channel = null
 let started = false
 
-export async function startPresence(){
+async function start(uid){
 
-  if(started) return
-  started = true
-
-  const { data } = await supabase.auth.getUser()
-  const uid = data.user?.id
-  if(!uid) return
+  if(channel) return
 
   channel = supabase.channel("global-online", {
     config: { presence: { key: uid } }
@@ -28,6 +23,35 @@ export async function startPresence(){
         await channel.track({ online: true })
       }
     })
+}
+
+export async function initPresence(){
+
+  if(started) return
+  started = true
+
+  // 🔥 ВАЖНО: проверяем текущую сессию
+  const { data } = await supabase.auth.getSession()
+  if(data.session?.user){
+    start(data.session.user.id)
+  }
+
+  // слушаем логин/логаут
+  supabase.auth.onAuthStateChange(async (event, session) => {
+
+    if(event === "SIGNED_IN" && session?.user){
+      start(session.user.id)
+    }
+
+    if(event === "SIGNED_OUT"){
+      if(channel){
+        await channel.untrack()
+        await supabase.removeChannel(channel)
+        channel = null
+        onlineUsers.value = new Set()
+      }
+    }
+  })
 }
 
 export function getOnlineUsers(){
