@@ -186,11 +186,11 @@
 </template>
 
 
-
 <script setup>
 import { ref, nextTick } from "vue"
 import { supabase } from "../lib/supabase"
 import { onMounted, onUnmounted } from "vue"
+import { getOnlineUsers } from "../composables/usePresence"
 
 const users = ref([])
 const messages = ref([])
@@ -205,8 +205,10 @@ let conversationId = null
 const conversations = ref([])
 const menuOpen = ref(false)
 const searchResults = ref([])
-const onlineUsers = ref(new Set())
-let presenceChannel = null
+
+const onlineUsers = getOnlineUsers()
+
+
 
 
 
@@ -226,22 +228,6 @@ onMounted(async () => {
   const { data } = await supabase.auth.getUser()
   userId.value = data.user?.id
 
-  // ---- ONLINE PRESENCE ----
-  presenceChannel = supabase.channel("global-online", {
-    config: { presence: { key: userId.value } }
-  })
-
-  presenceChannel
-    .on("presence", { event: "sync" }, () => {
-      const state = presenceChannel.presenceState() || {}
-      onlineUsers.value = new Set(Object.keys(state))
-    })
-    .subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        await presenceChannel.track({ online: true })
-      }
-    })
-
   await loadConversations()
 })
 
@@ -250,7 +236,6 @@ onMounted(async () => {
 
 async function searchUsers(){
 
-  // пока юзер не загрузился — не ищем
   if(!userId.value) return
 
   const q = searchQuery.value.trim()
@@ -264,7 +249,7 @@ async function searchUsers(){
     .from("profiles")
     .select("id, name, username, avatar_url")
     .ilike("username", `%${q}%`)
-    .neq("id", userId.value)   // теперь не null
+    .neq("id", userId.value)
     .limit(10)
 
   if(error){
@@ -293,7 +278,6 @@ async function clearHistory(){
 async function deleteChat(){
   menuOpen.value = false
 
-
   if(!conversationId) return
 
   await supabase
@@ -310,7 +294,7 @@ async function deleteChat(){
   activeUser.value = null
   conversationId = null
 
-  await loadConversations() // <--- ВОТ ГЛАВНОЕ
+  await loadConversations()
 }
 
 
@@ -353,11 +337,10 @@ async function openChat(user){
   if(conversationId){
     await loadMessages()
 
-   if (channel) {
-  await supabase.removeChannel(channel)
-  channel = null
-}
-
+    if (channel) {
+      await supabase.removeChannel(channel)
+      channel = null
+    }
 
     channel = supabase
       .channel("messages-" + conversationId)
@@ -371,7 +354,6 @@ async function openChat(user){
         },
         (payload) => {
 
-          // защита от дублей
           if(!messages.value.find(m => m.id === payload.new.id)){
             messages.value.push(payload.new)
           }
@@ -387,14 +369,6 @@ async function openChat(user){
       .subscribe()
   }
 }
-
-
-onUnmounted(async () => {
-  if (presenceChannel) {
-    await presenceChannel.untrack()
-    await supabase.removeChannel(presenceChannel)
-  }
-})
 
 
 
@@ -414,18 +388,16 @@ async function loadConversations(){
   if(!data) return
 
   conversations.value = data.map(c => {
-  const other =
-    c.user1 === userId.value
-      ? c.profiles_user2
-      : c.profiles_user1
+    const other =
+      c.user1 === userId.value
+        ? c.profiles_user2
+        : c.profiles_user1
 
-  return {
-    conversationId: c.id,
-    ...other
-  }
-})
-
-  
+    return {
+      conversationId: c.id,
+      ...other
+    }
+  })
 
   users.value = conversations.value
 }
@@ -472,3 +444,4 @@ async function sendMessage(){
   await loadConversations()
 }
 </script>
+

@@ -2,8 +2,15 @@
 import { onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { supabase } from "./lib/supabase"
+import { startPresence } from "./composables/usePresence"
+
+
 
 const router = useRouter()
+
+onMounted(() => {
+  startPresence()
+})
 
 onMounted(async () => {
   const { data } = await supabase.auth.getSession()
