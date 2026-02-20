@@ -42,6 +42,10 @@
       <label class="block mb-1">Bio</label>
       <textarea v-model="bio" class="input" />
     </div>
+    <ThemeSwitcher />
+     
+
+
 
     <button class="btn-glow px-6 py-2 rounded-xl" @click="save">
       Сохранить
@@ -57,6 +61,7 @@
 import { ref, onMounted, computed } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
+import ThemeSwitcher from "../components/ThemeSwitcher.vue"
 
 
 const name = ref("")

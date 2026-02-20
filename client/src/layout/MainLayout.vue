@@ -1,14 +1,10 @@
 <template>
-  <div class="flex gap-6 p-6">
-
+  <div class="layout">
     <Sidebar />
-
-    <main class="flex-1 max-w-2xl mx-auto">
+    <div class="center">
       <router-view />
-    </main>
-
+    </div>
     <RightPanel />
-
   </div>
 </template>
 
@@ -16,3 +12,19 @@
 import Sidebar from "../components/Sidebar.vue"
 import RightPanel from "../components/RightPanel.vue"
 </script>
+
+<style scoped>
+.layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;   /* центрируем всю группу */
+  padding: 24px 20px;
+  min-height: 100vh;
+  gap: 16px;                 /* одинаковый gap между всеми тремя */
+}
+
+.center {
+  width: 640px;
+  flex-shrink: 0;            /* не сжимается, фиксированная ширина */
+}
+</style>

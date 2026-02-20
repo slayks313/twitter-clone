@@ -14,7 +14,10 @@ import {
   faHeart,
   faComment,
   faRetweet,
-  faPlus
+  faPlus,
+    faBars,
+  faUserGroup,
+  faMagnifyingGlass 
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -24,7 +27,10 @@ library.add(
   faHeart,
   faComment,
   faRetweet,
-  faPlus
+  faPlus,
+  faBars,
+  faUserGroup,
+  faMagnifyingGlass 
 )
 
 const app = createApp(App)
