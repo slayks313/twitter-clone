@@ -23,7 +23,7 @@
         <div v-else class="follower-avatar fallback">
           <fa icon="user" />
         </div>
-        <!-- <span v-if="onlineUsers.has(user.id)" class="online-dot" /> -->
+        <span v-if="onlineUsers.has(user.id)" class="online-dot" />
       </div>
 
       <div v-if="followingUsers.length === 0" class="empty-hint">
@@ -37,7 +37,9 @@
 <script setup>
 import { ref, onMounted } from "vue"
 import { supabase } from "../lib/supabase"
-// import { onlineUsers } from "../composables/usePresence"
+import { getOnlineUsers } from "../composables/usePresence"
+
+const onlineUsers = getOnlineUsers()
 
 const followingUsers = ref([])
 
