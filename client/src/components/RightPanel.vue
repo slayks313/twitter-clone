@@ -8,23 +8,28 @@
 
     <!-- Вертикальная планка с подписками -->
     <div class="followers-bar glass">
-      <div
-        v-for="user in followingUsers"
-        :key="user.id"
-        class="follower-item"
-        :title="user.name || user.username"
-      >
-        <img
-          v-if="user.avatar_url"
-          :src="user.avatar_url"
-          class="follower-avatar"
-          alt="avatar"
-        />
-        <div v-else class="follower-avatar fallback">
-          <fa icon="user" />
-        </div>
-        <span v-if="onlineUsers.has(user.id)" class="online-dot" />
-      </div>
+<router-link
+  v-for="user in followingUsers"
+  :key="user.id"
+  :to="'/profile/' + user.id"
+  class="follower-item"
+
+>
+<span class="tooltip">
+  {{user.name }}
+</span>
+  <img
+    v-if="user.avatar_url"
+    :src="user.avatar_url"
+    class="follower-avatar"
+    alt="avatar"
+  />
+  <div v-else class="follower-avatar fallback">
+    <fa icon="user" />
+  </div>
+
+  <span v-if="onlineUsers.has(user.id)" class="online-dot" />
+</router-link>
 
       <div v-if="followingUsers.length === 0" class="empty-hint">
         <fa icon="user-group" />
@@ -70,8 +75,10 @@ onMounted(async () => {
 .right-panel {
   width: 72px;
   flex-shrink: 0;
+  align-self: flex-start;
 }
 
+/* кнопка настроек */
 .settings-btn {
   width: 44px;
   height: 44px;
@@ -91,6 +98,7 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* контейнер */
 .followers-bar {
   display: flex;
   flex-direction: column;
@@ -101,28 +109,56 @@ onMounted(async () => {
   border-radius: 32px;
 }
 
+/* обертка аватара */
 .follower-item {
   position: relative;
-  flex-shrink: 0;
-}
-
-.follower-avatar {
   width: 42px;
   height: 42px;
+  flex-shrink: 0;
+    text-decoration: none;
+}
+.tooltip {
+  position: absolute;
+  left: 55px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--card);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.follower-item:hover .tooltip {
+  opacity: 1;
+}
+
+/* ОБЩИЙ стиль для img и fallback */
+.follower-avatar {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  display: block;
+  aspect-ratio: 1 / 1;     /* гарант круга */
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   cursor: pointer;
   transition: 0.2s;
-  display: block;
 }
 
+/* hover */
 .follower-avatar:hover {
   transform: scale(1.08);
   border-color: var(--glow);
   box-shadow: 0 0 10px var(--glow);
 }
 
+/* fallback */
 .follower-avatar.fallback {
   background: var(--card);
   display: flex;
@@ -133,10 +169,11 @@ onMounted(async () => {
   opacity: 0.4;
 }
 
+/* онлайн точка */
 .online-dot {
   position: absolute;
-  bottom: 1px;
-  right: 1px;
+  bottom: 2px;
+  right: 2px;
   width: 11px;
   height: 11px;
   border-radius: 50%;
@@ -144,6 +181,7 @@ onMounted(async () => {
   border: 2px solid var(--bg-main);
 }
 
+/* если пусто */
 .empty-hint {
   color: var(--text);
   opacity: 0.25;

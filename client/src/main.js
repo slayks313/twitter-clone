@@ -17,7 +17,10 @@ import {
   faPlus,
     faBars,
   faUserGroup,
-  faMagnifyingGlass 
+  faMagnifyingGlass,
+  faImage,
+  faSpinner,
+  faTrash 
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -30,7 +33,10 @@ library.add(
   faPlus,
   faBars,
   faUserGroup,
-  faMagnifyingGlass 
+  faMagnifyingGlass,
+  faImage,
+  faSpinner,
+  faTrash
 )
 
 const app = createApp(App)
