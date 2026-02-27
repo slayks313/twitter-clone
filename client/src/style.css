@@ -52,12 +52,54 @@ body {
 }
 
 
-/* дефолт (blue) */
+/* Дефолт (Blue/Dark) */
 :root {
-  --bg-main:#0b0f1a;
-  --bg1:#2563eb66;
-  --bg2:#9333ea66;
-  --card:rgba(255,255,255,0.06);
-  --glow:#3b82f6aa;
-  --text:#ffffff;
+  --bg-main: #0b0f1a;
+  --bg1: #2563eb66;
+  --bg2: #9333ea66;
+  --card: rgba(255, 255, 255, 0.06);
+  --glow: #3b82f6aa;
+  --text: #ffffff;
+}
+
+/* Светлая тема */
+.theme-light {
+  --bg-main: #f3f4f6;
+  --bg1: #3b82f633;
+  --bg2: #60a5fa33;
+  --card: rgba(255, 255, 255, 0.7);
+  --glow: #3b82f644;
+  --text: #1f2937;
+}
+
+/* Ночная тема (True Black) */
+.theme-night {
+  --bg-main: #000000;
+  --bg1: #1f1f1f;
+  --bg2: #111111;
+  --card: rgba(255, 255, 255, 0.03);
+  --glow: #ffffff22;
+  --text: #e5e7eb;
+}
+.owner-gradient-text {
+  /* Сделали цвета чуть насыщеннее */
+  background: linear-gradient(90deg, #bc61ff, #3b82f6, #22d3ee, #bc61ff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine-text 3s linear infinite;
+  /* Усилили свечение самого текста */
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+  font-weight: 800;
+}
+
+.spark-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+@keyframes shine-text {
+  to { background-position: 200% center; }
 }

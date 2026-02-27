@@ -3,10 +3,25 @@ import { onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { supabase } from "./lib/supabase"
 import { initPresence } from "./composables/usePresence"
-
+import { themes } from "./themes" 
+import { useAuth } from "./composables/useAuth"
 
 
 const router = useRouter()
+
+
+
+
+onMounted(() => {
+  const savedThemeName = localStorage.getItem("user-theme")
+  const theme = themes[savedThemeName]
+  
+  if (theme) {
+    Object.entries(theme.vars).forEach(([k, v]) => {
+      document.documentElement.style.setProperty(k, v)
+    })
+  }
+})
 
 
 
@@ -15,9 +30,9 @@ onMounted(() => {
 })
 
 onMounted(async () => {
-  const { data } = await supabase.auth.getSession()
+  const { user } = useAuth()
 
-  if(!data.session){
+  if(!user.value){
     router.push("/login")
   }
 })

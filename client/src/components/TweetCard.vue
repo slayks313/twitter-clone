@@ -1,5 +1,5 @@
 <template>
-  <div v-if="post" class="glass p-5 transition hover:scale-[1.02]">
+  <div v-if="post" class="glass p-5 transition ">
 
     <!-- Header -->
 <div class="flex items-center justify-between mb-3">
@@ -44,6 +44,7 @@
 </button>
 
 
+
 </div>
 
 
@@ -66,20 +67,21 @@
     class="carousel-track"
     :style="{ transform: `translateX(-${currentSlide * 100}%)` }"
   >
- <div
-  v-for="(img, index) in post.post_images"
-  :key="img.image_url"
-  class="carousel-slide"
->
-  <img
-    :src="img.image_url"
-    draggable="false"
-   
-  />
-</div>
+
+    <div
+      v-for="(img, index) in post.post_images"
+      :key="img.image_url"
+      class="carousel-slide"
+    >
+      <img
+        :src="img.image_url"
+        draggable="false"
+      />
+    </div>
+
   </div>
 
-  <!-- стрелки -->
+  <!-- стрелка влево -->
   <button
     v-if="currentSlide > 0"
     class="arrow left"
@@ -88,6 +90,7 @@
     ‹
   </button>
 
+  <!-- стрелка вправо -->
   <button
     v-if="currentSlide < post.post_images.length - 1"
     class="arrow right"
@@ -125,8 +128,118 @@
           {{ likesCount }}
         </span>
       </button>
+      <button
+  @click="toggleComments"
+  class="flex items-center gap-2 opacity-60 hover:opacity-100 transition"
+>
+  <fa 
+  icon="comment" 
+:class="commented ? 'text-sky-400 scale-110' : 'opacity-60 group-hover:text-sky-400'"
+    />
+  <span :class="commented ? 'text-sky-400' : 'opacity-60'">
+  {{ commentsCount }}
+</span>
+</button>
+
+   
+
 
     </div>
+<div v-if="showComments" class="mt-4 space-y-3">
+
+  <div
+    v-for="comment in comments"
+    :key="comment.id"
+    class="flex gap-2"
+  >
+    <img
+      v-if="comment.profiles?.avatar_url"
+      :src="comment.profiles.avatar_url"
+      class="w-8 h-8 rounded-full"
+    />
+
+    <div class="bg-white/5 p-2 rounded-xl text-sm w-full break-words break-all">
+
+    <div class="flex items-center gap-3">
+
+  <div class="font-bold text-xs">
+    {{ comment.profiles?.name }}
+  </div>
+ 
+
+  <div
+    v-if="comment.user_id === props.currentUserId"
+    class="flex gap-3 text-xs ml-auto"
+  >
+    <button @click="startEdit(comment)"
+            class="opacity-60 hover:text-yellow-400 transition">
+      <fa icon="pen-to-square" />
+    </button>
+
+    <button @click="deleteComment(comment.id)"
+            class="opacity-60 hover:text-red-500 transition">
+      <fa icon="trash" />
+    </button>
+  </div>
+
+</div>
+
+      <!-- редактирование -->
+      <div v-if="editingCommentId === comment.id">
+
+        <input
+          v-model="editedContent"
+          class="w-full bg-black/30 p-1 rounded mt-1"
+        />
+
+        <button
+          @click="saveEdit(comment.id)"
+          class="text-xs mt-1 btn-glow px-2 rounded"
+        >
+          Сохранить
+        </button>
+
+      </div>
+
+      <!-- обычный текст -->
+      <div v-else>
+        {{ comment.content }}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- показать ещё -->
+<div v-if="hasMoreComments" class="text-center">
+
+  <button
+    @click="loadComments"
+    class="flex items-center justify-center gap-2 mx-auto
+           opacity-60 hover:opacity-100 transition"
+  >
+    <fa icon="angles-down" />
+    <span>Показать ещё</span>
+  </button>
+
+</div>
+
+  <!-- поле добавления -->
+  <div class="flex gap-2 mt-2">
+    <input
+      v-model="newComment"
+      placeholder="Написать комментарий..."
+      class="flex-1 bg-white/5 p-2 rounded-xl text-sm"
+      @keydown.enter="addComment"
+    />
+<button
+  @click="addComment"
+  class="btn-glow px-3 rounded-xl text-sm flex items-center justify-center"
+>
+  <fa icon="paper-plane" />
+</button>
+  </div>
+
+</div>
 
 
   </div>
@@ -157,7 +270,147 @@ import { ref, onMounted, computed } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
 
+
+
+const props = defineProps({
+  post: Object,
+  followingSet: Object,
+  likedPostsSet: Object,
+  currentUserId: String,
+  updateFollowing: Function
+
+})
+
+const showComments = ref(false)
+const comments = ref([])
+const newComment = ref("")
+const commentsCount = ref(props.post.comments_count || 0)
+
+const commentsPage = ref(0)
+const commentsLimit = 10
+const hasMoreComments = ref(true)
+const loadingComments = ref(false)
+
+function toggleComments(){
+
+  showComments.value = !showComments.value
+
+  if(showComments.value){
+
+    if(comments.value.length === 0){
+      loadComments()
+    }
+
+  } else {
+
+    // 🔥 сбрасываем состояние
+    comments.value = []
+    commentsPage.value = 0
+    hasMoreComments.value = true
+
+  }
+}
+
+
+async function loadComments(){
+
+  if(loadingComments.value) return
+  if(!hasMoreComments.value) return
+
+  loadingComments.value = true
+
+  const { data, error } = await supabase
+    .from("comments")
+    .select("*, profiles(id, name, username, avatar_url)")
+    .eq("post_id", props.post.id)
+    .order("created_at", { ascending: true })
+    .range(
+      commentsPage.value * commentsLimit,
+      commentsPage.value * commentsLimit + commentsLimit - 1
+    )
+
+  if(!error){
+
+    if(data.length < commentsLimit){
+      hasMoreComments.value = false
+    }
+
+    comments.value.push(...data)
+    commentsPage.value++
+  }
+
+  loadingComments.value = false
+}
+const commented = computed(() => {
+  if (props.post.user_commented) return true
+
+  return comments.value.some(
+    c => c.user_id === props.currentUserId
+  )
+})
+async function addComment(){
+
+  if(!newComment.value.trim()) return
+
+  const { data, error } = await supabase
+    .from("comments")
+    .insert({
+      post_id: props.post.id,
+      user_id: props.currentUserId,
+      content: newComment.value
+    })
+    .select("*, profiles(id, name, username, avatar_url)")
+    .single()
+
+  if(!error){
+    comments.value.push(data)
+    commentsCount.value++
+    newComment.value = ""
+  }
+}
+async function deleteComment(commentId){
+
+  const { error } = await supabase
+    .from("comments")
+    .delete()
+    .eq("id", commentId)
+    .eq("user_id", props.currentUserId)
+
+  if(!error){
+    comments.value = comments.value.filter(c => c.id !== commentId)
+    commentsCount.value--
+  }
+}
+
+const editingCommentId = ref(null)
+const editedContent = ref("")
+
+function startEdit(comment){
+  editingCommentId.value = comment.id
+  editedContent.value = comment.content
+}
+
+async function saveEdit(commentId){
+
+  const { error } = await supabase
+    .from("comments")
+    .update({ content: editedContent.value })
+    .eq("id", commentId)
+    .eq("user_id", props.currentUserId)
+
+  if(!error){
+    const c = comments.value.find(c => c.id === commentId)
+    if(c) c.content = editedContent.value
+
+    editingCommentId.value = null
+  }
+}
+
 const router = useRouter()
+
+
+
+
 
 const currentUserId = ref(null)
 const currentSlide = ref(0)
@@ -289,17 +542,10 @@ function goToProfile(){
 
 
 
-const props = defineProps({
-  post: Object,
-  followingSet: Object,
-  likedPostsSet: Object,
-  currentUserId: String,
-  updateFollowing: Function
-
-})
 
 
-const likesCount = ref(props.post.likes?.[0]?.count || 0)
+
+const likesCount = ref(props.post.likes_count || 0)
 
 
 
@@ -334,6 +580,11 @@ async function toggleLike(){
     if(!error){
       props.likedPostsSet.add(props.post.id)
       likesCount.value++
+
+      await supabase.rpc("update_user_tag_weights", {
+  p_user: props.currentUserId,
+  p_post: props.post.id
+})
     }
   }
 }
@@ -352,6 +603,7 @@ const formattedDate = computed(() => {
 </script>
 
 <style>
+
 
 .delete-btn {
   background: transparent;

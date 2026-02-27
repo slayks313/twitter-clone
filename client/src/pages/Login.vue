@@ -31,15 +31,25 @@ const email = ref("")
 const password = ref("")
 const router = useRouter()
 
+import { useAuth } from "../composables/useAuth"
+
+const { user } = useAuth()
+
 async function login(){
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value
   })
 
-  if(error) return alert(error.message)
+  if (error) return alert(error.message)
 
-  router.push("/")
+  // ждём пока user.value появится
+  const waitUser = setInterval(() => {
+    if (user.value) {
+      clearInterval(waitUser)
+      router.push("/")
+    }
+  }, 50)
 }
 
 async function register(){

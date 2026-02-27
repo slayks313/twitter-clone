@@ -63,6 +63,7 @@
 import { ref } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
+import { useAuth } from "../composables/useAuth"
 
 const router = useRouter()
 
@@ -76,8 +77,10 @@ async function uploadAvatar(e){
   const file = e.target.files[0]
   if(!file) return
 
-  const { data } = await supabase.auth.getUser()
-  const filePath = `${data.user.id}/avatar-${Date.now()}.png`
+  const { user } = useAuth()
+
+const userId = computed(() => user.value?.id)
+  const filePath = `${userId.value}/avatar-${Date.now()}.png`
 
   await supabase.storage
     .from("avatars")
@@ -94,8 +97,10 @@ async function uploadBanner(e){
   const file = e.target.files[0]
   if(!file) return
 
-  const { data } = await supabase.auth.getUser()
-  const filePath = `${data.user.id}/banner-${Date.now()}.png`
+  const { user } = useAuth()
+
+  const userId = computed(() => user.value?.id)
+  const filePath = `${userId.value}/banner-${Date.now()}.png`
 
   await supabase.storage
     .from("banners")
@@ -114,7 +119,9 @@ async function saveProfile(){
     return alert("Username обязателен")
   }
 
-  const { data } = await supabase.auth.getUser()
+const { user } = useAuth()
+
+const userId = computed(() => user.value?.id)
 
   const { error } = await supabase
     .from("profiles")
@@ -125,7 +132,7 @@ async function saveProfile(){
       avatar_url: avatarUrl.value,
       banner_url: bannerUrl.value
     })
-    .eq("id", data.user.id)
+    .eq("id", userId.value)
 
   if(error) return alert(error.message)
 

@@ -5,7 +5,9 @@ import "./style.css"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { initPresence } from "./composables/usePresence"
+import { initAuth } from "./composables/useAuth"
 
+await initAuth()
 
 import {
   faHouse,
@@ -20,7 +22,12 @@ import {
   faMagnifyingGlass,
   faImage,
   faSpinner,
-  faTrash 
+    faPenToSquare,
+  faTrash,
+  faPaperPlane,
+  faAnglesDown,
+  faBell 
+  
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -36,7 +43,12 @@ library.add(
   faMagnifyingGlass,
   faImage,
   faSpinner,
-  faTrash
+    faPenToSquare,
+  faTrash,
+  faPaperPlane,
+  faAnglesDown,
+  faBell
+  
 )
 
 const app = createApp(App)

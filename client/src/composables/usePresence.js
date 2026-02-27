@@ -1,5 +1,7 @@
 import { ref } from "vue"
 import { supabase } from "../lib/supabase"
+import { useAuth } from "./useAuth"
+
 
 const onlineUsers = ref(new Set())
 let channel = null
@@ -31,9 +33,9 @@ export async function initPresence(){
   started = true
 
   // 🔥 ВАЖНО: проверяем текущую сессию
-  const { data } = await supabase.auth.getSession()
-  if(data.session?.user){
-    start(data.session.user.id)
+const { user } = useAuth()
+  if(user.value){
+    start(user.value.id)
   }
 
   // слушаем логин/логаут

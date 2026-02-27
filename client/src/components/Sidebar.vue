@@ -41,24 +41,25 @@
 
 <script setup>
 import { supabase } from "../lib/supabase"
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
+import { useAuth } from "../composables/useAuth"
 
-const userId = ref("")
+const { user } = useAuth()
+
+const userId = computed(() => user.value?.id)
+
 const avatarUrl = ref("")
 
 onMounted(async () => {
-  const { data } = await supabase.auth.getUser()
-  userId.value = data.user?.id
+  if (!userId.value) return
 
-  if (userId.value) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("avatar_url")
-      .eq("id", userId.value)
-      .single()
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", userId.value)
+    .single()
 
-    avatarUrl.value = profile?.avatar_url || ""
-  }
+  avatarUrl.value = profile?.avatar_url || ""
 })
 </script>
 

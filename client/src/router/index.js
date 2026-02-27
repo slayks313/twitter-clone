@@ -8,26 +8,24 @@ import Settings from "../pages/Settings.vue"
 import Login from "../pages/Login.vue"
 import Register from "../pages/Register.vue"
 import SetupProfile from "../pages/SetupProfile.vue"
-import Chat from "../pages/Chat.vue"
+import { useAuth } from "../composables/useAuth"
 
 const routes = [
 
   { path: "/login", component: Login },
   { path: "/register", component: Register },
-
-  // ВАЖНО: setup отдельно, НЕ внутри MainLayout
   { path: "/setup-profile", component: SetupProfile, meta:{auth:true} },
 
   {
     path: "/",
     component: MainLayout,
     meta:{auth:true},
+    redirect: "/feed",
     children: [
-      { path: "", component: Home },
+      { path: "feed", component: Home },
       { path: "profile/:id", component: Profile },
       { path: "settings", component: Settings },
-      {path: "/chat", component: () => import("../pages/Chat.vue")}
-
+      { path: "chat", component: () => import("../pages/Chat.vue") }
     ]
   }
 
@@ -39,26 +37,30 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  const { user, ready } = useAuth()
 
-  const { data } = await supabase.auth.getSession()
-  const session = data.session
+  // если auth ещё не загрузился — пропускаем
+  if (!ready.value) return true
 
-  if(to.meta.auth && !session){
+  // если страница требует авторизации
+  if (to.meta.auth && !user.value) {
     return "/login"
   }
 
-  if(session){
+  // если пользователь залогинен — проверяем профиль
+  if (user.value) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("username")
-      .eq("id", session.user.id)
+      .eq("id", user.value.id)
       .single()
 
-    if(!profile?.username && to.path !== "/setup-profile"){
+    if (!profile?.username && to.path !== "/setup-profile") {
       return "/setup-profile"
     }
   }
 
+  return true
 })
 
 export default router

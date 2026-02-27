@@ -1,8 +1,11 @@
 <template>
-  <div class="flex gap-6 h-[85vh]">
+<div class="chat-layout full-height">
 
     <!-- LEFT -->
-    <div class="glass w-1/3 p-4 flex flex-col">
+<div 
+v-if="!activeUser || !isMobile"
+  class="chat-list glass"
+>
 
       <h2 class="text-xl font-semibold mb-4 opacity-80">Messages</h2>
 
@@ -64,9 +67,13 @@
 
 
     <!-- RIGHT -->
-<div class="flex-1 flex">
+<div class="chat-window">
 
-<div v-if="activeUser" class="glass flex-1 flex flex-col h-full">
+<div 
+  v-if="activeUser"
+  :key="conversationId"
+  class="glass flex-1 flex flex-col h-full chat-window-mobile"
+>
 
   
 
@@ -76,6 +83,12 @@
 
   <div class="font-semibold text-lg">
    <div class="flex items-center gap-3">
+    <button
+  class="back-btn"
+  @click="activeUser = null"
+>
+  ←
+</button>
 
   <div class="relative">
 
@@ -139,23 +152,34 @@
 
 
       <!-- messages -->
-      <div ref="messagesBox" class="flex-1 overflow-y-auto p-6 space-y-4">
+      <div 
+  ref="messagesBox" 
+  class="flex-1 overflow-y-auto p-6 space-y-4 messages-scroll"
+>
 
-        <div
-          v-for="msg in messages"
-          :key="msg.id"
-          class="flex"
-          :class="msg.sender_id === userId ? 'justify-end' : 'justify-start'"
-        >
-          <div
-            class="px-4 py-2 rounded-2xl max-w-[65%] text-sm leading-relaxed"
-            :class="msg.sender_id === userId
-              ? 'bg-gradient-to-br from-blue-500 to-indigo-600 rounded-br-none'
-              : 'bg-white/10 rounded-bl-none'"
-          >
-            {{ msg.content }}
-          </div>
-        </div>
+<div
+  v-for="msg in messages"
+  :key="msg?.id" 
+  class="flex mb-2"
+  :class="msg?.sender_id === userId ? 'justify-end' : 'justify-start'"
+>
+  <div
+    class="relative px-3 py-1.5 rounded-2xl max-w-[85%] text-[14px] leading-snug flow-root"
+    :class="msg?.sender_id === userId
+      ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-md'
+      : 'bg-white/10 text-white rounded-bl-md'"
+  >
+    <span class="break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
+      {{ msg?.content }}
+    </span>
+
+    <div class="float-right mt-1.5 ml-2 -mb-0.5 flex items-center space-x-1 h-3 text-[10px] opacity-70 select-none">
+      <span>{{ formatTime(msg?.created_at) }}</span>
+      
+   
+    </div>
+  </div>
+</div>
 
       </div>
 
@@ -177,9 +201,12 @@
       </div>
 
     </div>
-     <div v-else class="h-full flex items-center justify-center opacity-40 text-lg">
-    Выбери диалог
-  </div>
+<div 
+  v-else-if="!isMobile"
+  class="h-full flex items-center justify-center opacity-40 text-lg"
+>
+  Выбери диалог
+</div>
 </div>
 
   </div>
@@ -187,31 +214,63 @@
 
 
 <script setup>
-import { ref, nextTick } from "vue"
+import { ref, nextTick, computed } from "vue"
 import { supabase } from "../lib/supabase"
 import { onMounted, onUnmounted } from "vue"
 import { getOnlineUsers } from "../composables/usePresence"
+import { useAuth } from "../composables/useAuth"
+import { watch } from "vue"
 
+
+
+
+const { user } = useAuth()
+const userId = computed(() => user.value?.id)
 
 const users = ref([])
 const messages = ref([])
 const newMessage = ref("")
-const userId = ref(null)
 const activeUser = ref(null)
 const searchQuery = ref("")
 const messagesBox = ref(null)
 
 let channel = null
-let conversationId = null
+const conversationId = ref(null)
 const conversations = ref([])
 const menuOpen = ref(false)
 const searchResults = ref([])
 
 const onlineUsers = getOnlineUsers()
+const isMobile = ref(false)
+
+const emit = defineEmits(["toggleMobileNav"])
+
+watch(activeUser, (val) => {
+  emit("toggleMobileNav", !!val)
+})
+
+const checkScreen = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  checkScreen()
+  window.addEventListener("resize", checkScreen)
+})
+
+onUnmounted(() => {
+  window.removeEventListener("resize", checkScreen)
+})
 
 
+function formatTime(dateString){
+  const date = new Date(dateString)
 
-
+  return date.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })
+}
 
 
 
@@ -224,14 +283,12 @@ function handleClickOutside(e){
 onMounted(() => window.addEventListener("click", handleClickOutside))
 onUnmounted(() => window.removeEventListener("click", handleClickOutside))
 
-onMounted(async () => {
-  
 
-  const { data } = await supabase.auth.getUser()
-  userId.value = data.user?.id
 
+watch(userId, async (id) => {
+  if (!id) return
   await loadConversations()
-})
+}, { immediate: true })
 
 
 
@@ -267,12 +324,12 @@ async function searchUsers(){
 async function clearHistory(){
   menuOpen.value = false
 
-  if(!conversationId) return
+if(!conversationId.value) return
 
   await supabase
     .from("messages")
     .delete()
-    .eq("conversation_id", conversationId)
+    .eq("conversation_id", conversationId.value)
 
   messages.value = []
 }
@@ -280,12 +337,12 @@ async function clearHistory(){
 async function deleteChat(){
   menuOpen.value = false
 
-  if(!conversationId) return
+  if(!conversationId.value) return
 
   await supabase
     .from("conversations")
     .delete()
-    .eq("id", conversationId)
+    .eq("id", conversationId.value)
 
   if(channel){
     await supabase.removeChannel(channel)
@@ -294,7 +351,7 @@ async function deleteChat(){
 
   messages.value = []
   activeUser.value = null
-  conversationId = null
+  conversationId.value = null
 
   await loadConversations()
 }
@@ -303,73 +360,61 @@ async function deleteChat(){
 
 async function openChat(user){
 
+  messages.value = []
   activeUser.value = user
 
-  const { data: existing } = await supabase
-    .from("conversations")
-    .select("id")
-    .or(
-      `and(user1.eq.${userId.value},user2.eq.${user.id}),and(user1.eq.${user.id},user2.eq.${userId.value})`
-    )
-    .maybeSingle()
+  // если уже есть conversationId в conversations — не делай запрос
+  const existingLocal = conversations.value.find(c => c.id === user.id)
 
-  if(existing){
-    conversationId = existing.id
+  if(existingLocal){
+    conversationId.value = existingLocal.conversationId
   } else {
-
-    const { data: newConversation, error } = await supabase
+    const { data: existing } = await supabase
       .from("conversations")
-      .insert({
-        user1: userId.value,
-        user2: user.id
-      })
-      .select()
-      .single()
-
-    if(error){
-      console.error(error)
-      return
-    }
-
-    conversationId = newConversation.id
-    await loadConversations()
-
-  }
-
-  if(conversationId){
-    await loadMessages()
-
-    if (channel) {
-      await supabase.removeChannel(channel)
-      channel = null
-    }
-
-    channel = supabase
-      .channel("messages-" + conversationId)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`
-        },
-        (payload) => {
-
-          if(!messages.value.find(m => m.id === payload.new.id)){
-            messages.value.push(payload.new)
-          }
-
-          nextTick(() => {
-            messagesBox.value?.scrollTo({
-              top: messagesBox.value.scrollHeight,
-              behavior: "smooth"
-            })
-          })
-        }
+      .select("id")
+      .or(
+        `and(user1.eq.${userId.value},user2.eq.${user.id}),and(user1.eq.${user.id},user2.eq.${userId.value})`
       )
-      .subscribe()
+      .maybeSingle()
+
+    if(existing){
+      conversationId.value = existing.id
+    }
   }
+
+  await loadMessages()
+  setupRealtime()
+}
+function setupRealtime(){
+
+  if(channel){
+    supabase.removeChannel(channel)
+  }
+
+  channel = supabase
+    .channel("messages-" + conversationId.value)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `conversation_id=eq.${conversationId.value}`
+      },
+      (payload) => {
+
+        if(!messages.value.find(m => m.id === payload.new.id)){
+          messages.value.push(payload.new)
+        }
+
+        nextTick(() => {
+          messagesBox.value?.scrollTo({
+            top: messagesBox.value.scrollHeight
+          })
+        })
+      }
+    )
+    .subscribe()
 }
 
 
@@ -407,12 +452,12 @@ async function loadConversations(){
 
 async function loadMessages(){
 
-  if(!conversationId) return
+  if(!conversationId.value) return
 
   const { data } = await supabase
     .from("messages")
     .select("*")
-    .eq("conversation_id", conversationId)
+    .eq("conversation_id", conversationId.value)
     .order("created_at", { ascending: true })
 
   messages.value = data || []
@@ -427,23 +472,99 @@ async function loadMessages(){
 
 async function sendMessage(){
 
-  if(!newMessage.value.trim() || !conversationId) return
+  if(!newMessage.value.trim() || !conversationId.value) return
 
   const text = newMessage.value
+  const sender = user.value?.id
+
   newMessage.value = ""
 
   const { error } = await supabase
     .from("messages")
     .insert({
-      conversation_id: conversationId,
-      sender_id: userId.value,
+      conversation_id: conversationId.value,
+      sender_id: sender,
       content: text
     })
 
   if(error){
     console.error(error)
   }
-  await loadConversations()
 }
 </script>
+
+<style scoped>
+.full-height {
+  height: 100vh;
+}
+/* убрать scrollbar */
+.messages-scroll::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+.messages-scroll {
+  -ms-overflow-style: none;  /* IE */
+  scrollbar-width: none;     /* Firefox */
+}
+.chat-layout {
+  display: flex;
+  gap: 24px;
+  height: 85vh;
+}
+
+/* список */
+.chat-list {
+  width: 33%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* окно */
+.chat-window {
+  flex: 1;
+  display: flex;
+}
+
+/* кнопка назад */
+.back-btn {
+  display: none;
+  margin-right: 12px;
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+/* ========================= */
+/* 📱 МОБИЛЬНАЯ ВЕРСИЯ */
+/* ========================= */
+
+@media (max-width: 768px) {
+
+  .chat-layout {
+    flex-direction: column;
+    height: calc(100vh - 120px);
+  }
+
+  .chat-list {
+    width: 100%;
+    height: 100%;
+  }
+
+  .chat-window {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* когда открыт диалог — скрываем список */
+  .chat-list:has(+ .chat-window .glass) {
+    display: none;
+  }
+
+  .back-btn {
+    display: block;
+  }
+
+}
+</style>
 

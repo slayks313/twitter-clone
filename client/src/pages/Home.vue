@@ -4,10 +4,10 @@
 <div class="post-wrapper">
 
 
-  <!-- отдельная лупа -->
+  <!-- отдельная лупа
   <div class="search-icon">
     <fa icon="magnifying-glass" />
-  </div>
+  </div> -->
 
 
   <!-- поле -->
@@ -59,18 +59,57 @@
 
 </div>
 
+<div v-if="isInitialLoading" class="space-y-6">
+  <div v-for="n in 5" :key="n" class="glass p-5 animate-pulse">
 
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 bg-gray-700 rounded-full"></div>
+      <div class="flex-1 space-y-2">
+        <div class="h-4 bg-gray-700 rounded w-1/3"></div>
+        <div class="h-3 bg-gray-700 rounded w-1/4"></div>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <div class="h-4 bg-gray-700 rounded"></div>
+      <div class="h-4 bg-gray-700 rounded w-5/6"></div>
+      <div class="h-4 bg-gray-700 rounded w-2/3"></div>
+    </div>
+
+    <div class="mt-4 h-60 bg-gray-700 rounded-xl"></div>
+
+  </div>
+</div>
 
     <!-- Лента -->
+<DynamicScroller
+  v-if="!isInitialLoading"
+  :items="posts"
+  key-field="id"
+  class="scroller"
+  :min-item-size="200"
+>
+  <template #default="{ item, index }">
+
+<DynamicScrollerItem
+  :item="item"
+  :active="true"
+  :size-dependencies="[item.content, item.post_images]"
+  :data-index="index"
+>
+  <div class="pb-6"> <!-- вот тут отступ -->
     <TweetCard
-      v-for="post in posts"
-      :key="post.id"
-      :post="post"
+      :post="item"
       :followingSet="followingSet"
       :likedPostsSet="likedPostsSet"
       :currentUserId="currentUserId"
       :updateFollowing="updateFollowing"
     />
+  </div>
+</DynamicScrollerItem>
+
+  </template>
+</DynamicScroller>
 
 
 <div
@@ -95,12 +134,42 @@
   </div>
 </div>
   </div>
+  <div ref="scrollTrigger"></div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue"
 import { supabase } from "../lib/supabase"
 import TweetCard from "../components/TweetCard.vue"
+import {
+  DynamicScroller,
+  DynamicScrollerItem
+} from "vue-virtual-scroller"
+
+import "vue-virtual-scroller/dist/vue-virtual-scroller.css"
+
+import { useAuth } from "../composables/useAuth"
+
+
+
+
+
+const scrollTrigger = ref(null)
+
+onMounted(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        loadPosts()
+      }
+    },
+    { threshold: 1 }
+  )
+
+  if (scrollTrigger.value) {
+    observer.observe(scrollTrigger.value)
+  }
+})
 
 
 const imageFiles = ref([])
@@ -110,6 +179,8 @@ const followingSet = ref(new Set())
 const likedPostsSet = ref(new Set())
 const imagePreview = ref(null)
 const isPosting = ref(false)
+const currentFullImage = ref(null)
+const isInitialLoading = ref(true)
 
 const showFullImage = ref(false)
 
@@ -141,26 +212,36 @@ function removeImage(index) {
 let channel
 
 onMounted(async () => {
-  const { data } = await supabase.auth.getUser()
-  currentUserId.value = data.user?.id
+  try {
 
-  if (currentUserId.value) {
-    const { data: myFollows } = await supabase
-      .from("follows")
-      .select("following_id")
-      .eq("follower_id", currentUserId.value)
+   const { user } = useAuth()
+    currentUserId.value = user.value?.id
 
-    followingSet.value = new Set(myFollows?.map(f => f.following_id))
+    if (currentUserId.value) {
+      const { data: myFollows, error: followsError } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", currentUserId.value)
 
-    const { data: myLikes } = await supabase
-      .from("likes")
-      .select("post_id")
-      .eq("user_id", currentUserId.value)
+      if (followsError) throw followsError
 
-    likedPostsSet.value = new Set(myLikes?.map(l => l.post_id))
+      followingSet.value = new Set(myFollows?.map(f => f.following_id))
+
+      const { data: myLikes, error: likesError } = await supabase
+        .from("likes")
+        .select("post_id")
+        .eq("user_id", currentUserId.value)
+
+      if (likesError) throw likesError
+
+      likedPostsSet.value = new Set(myLikes?.map(l => l.post_id))
+    }
+
+    await loadPosts()
+
+  } catch (e) {
+    console.log("Home mounted error:", e)
   }
-
-  loadPosts()
 })
 
 onUnmounted(() => {
@@ -170,23 +251,55 @@ onUnmounted(() => {
 const content = ref("")
 const posts = ref([])
 
-async function loadPosts() {
-  const { data, error } = await supabase
-    .from("posts")
-  .select(`
-  *,
-  profiles!posts_user_id_fkey (
-    id, name, username, avatar_url
-  ),
-  likes(count),
-  post_images (
-    image_url
-  )
-`)
-    .order("created_at", { ascending: false })
 
-  if (error) { console.error(error); return }
-  posts.value = data
+const page = ref(0)
+
+const pageSize = 10
+const lastCursor = ref(null)
+const isLoadingMore = ref(false)
+const hasMore = ref(true)
+
+async function loadPosts() {
+
+  if (page.value === 0) {
+  isInitialLoading.value = true
+}
+
+  if (isLoadingMore.value) return
+  if (!currentUserId.value) return
+
+  isLoadingMore.value = true
+
+  const { data, error } = await supabase
+    .rpc("get_ranked_posts", {
+      p_user: currentUserId.value,
+      p_limit: pageSize,
+      p_offset: page.value * pageSize
+    })
+
+  if (error) {
+    console.error(error)
+    isLoadingMore.value = false
+    return
+  }
+
+  if (!data || data.length === 0) {
+    isLoadingMore.value = false
+    return
+  }
+
+  const cleaned = data.map(post => ({
+    ...post,
+    post_images: (post.post_images || []).filter(i => i?.image_url)
+  }))
+
+  // 🔥 добавляем, а не перезаписываем
+  posts.value.push(...cleaned)
+
+  page.value++
+
+  isLoadingMore.value = false
+  isInitialLoading.value = false
 }
 
 function updateFollowing(targetId, isNowFollowing) {
@@ -198,7 +311,10 @@ async function createPost() {
   if (isPosting.value) return
 isPosting.value = true
 
-  if (!content.value.trim() && !imageFiles.value.length) return
+if (!content.value.trim() && !imageFiles.value.length) {
+  isPosting.value = false
+  return
+}
 
   const { data: userData } = await supabase.auth.getUser()
   const user = userData.user
@@ -221,6 +337,11 @@ isPosting.value = true
   }
 
   const postId = postData.id
+
+  await supabase.rpc("add_post_hashtags", {
+  p_post_id: postId,
+  p_content: content.value
+})
 
   // 2️⃣ если есть картинки — загружаем
   for (const file of imageFiles.value) {
@@ -261,12 +382,22 @@ isPosting.value = true
   imageFiles.value = []
   imagePreviews.value = []
 
-  loadPosts()
+ loadPosts()
   isPosting.value = false
 }
 </script>
 
 <style scoped>
+.vue-recycle-scroller__item-wrapper {
+  overflow: visible !important;
+}
+
+.vue-recycle-scroller__item-view {
+  overflow: visible !important;
+}
+.scroller {
+  overflow: visible !important;
+}
 
 .post-btn {
   min-width: 90px;
@@ -467,5 +598,10 @@ isPosting.value = true
   border-radius: 40px;
   cursor: pointer;
   box-shadow: 0 0 15px var(--glow);
+}
+@media (max-width: 768px) {
+  .space-y-6 {
+    padding: 12px;
+  }
 }
 </style>

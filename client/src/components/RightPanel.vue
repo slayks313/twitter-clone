@@ -43,31 +43,36 @@
 import { ref, onMounted } from "vue"
 import { supabase } from "../lib/supabase"
 import { getOnlineUsers } from "../composables/usePresence"
+import { useAuth } from "../composables/useAuth"
 
 const onlineUsers = getOnlineUsers()
 
 const followingUsers = ref([])
 
 onMounted(async () => {
-  const { data: auth } = await supabase.auth.getUser()
-  const me = auth.user?.id
-  if (!me) return
+  try {
+    const { user } = useAuth()
+    const me = user.value?.id
+    if (!me) return
 
-  const { data: follows } = await supabase
-    .from("follows")
-    .select("following_id")
-    .eq("follower_id", me)
+    const { data: follows } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", me)
 
-  if (!follows?.length) return
+    if (!follows?.length) return
 
-  const ids = follows.map(f => f.following_id)
+    const ids = follows.map(f => f.following_id)
 
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, name, username, avatar_url")
-    .in("id", ids)
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, username, avatar_url")
+      .in("id", ids)
 
-  followingUsers.value = profiles || []
+    followingUsers.value = profiles || []
+  } catch (e) {
+    console.log("RightPanel auth error:", e)
+  }
 })
 </script>
 

@@ -58,11 +58,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, computed, watch } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
 import ThemeSwitcher from "../components/ThemeSwitcher.vue"
-
+import { useAuth } from "../composables/useAuth"
 
 const name = ref("")
 const username = ref("")
@@ -72,26 +72,29 @@ const bannerUrl = ref(null)
 
 const router = useRouter()
 
-let userId = null
 
-onMounted(async () => {
-  const { data } = await supabase.auth.getUser()
-  userId = data.user.id
+
+const { user } = useAuth()
+
+const userId = computed(() => user.value?.id)
+
+watch(userId, async (id) => {
+  if (!id) return
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", userId)
+    .eq("id", id)
     .single()
 
-  if(profile){
+  if (profile) {
     name.value = profile.name
     username.value = profile.username
     bio.value = profile.bio
     avatarUrl.value = profile.avatar_url
     bannerUrl.value = profile.banner_url
   }
-})
+}, { immediate: true })
 async function logout(){
   await supabase.auth.signOut()
   router.push("/login")
@@ -115,7 +118,7 @@ async function uploadAvatar(e){
   const file = e.target.files[0]
   if(!file) return
 
-  const filePath = `${userId}/avatar-${Date.now()}.png`
+  const filePath = `${userId.value}/avatar-${Date.now()}.png`
 
   const { error } = await supabase.storage
     .from("avatars")
@@ -134,7 +137,7 @@ async function uploadBanner(e){
   const file = e.target.files[0]
   if(!file) return
 
-  const filePath = `${userId}/banner-${Date.now()}.png`
+  const filePath = `${userId.value}/banner-${Date.now()}.png`
 
   const { error } = await supabase.storage
     .from("banners")
@@ -151,6 +154,8 @@ async function uploadBanner(e){
 
 async function save(){
 
+  if (!userId.value) return
+
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -160,7 +165,7 @@ async function save(){
       avatar_url: avatarUrl.value,
       banner_url: bannerUrl.value
     })
-    .eq("id", userId)
+    .eq("id", userId.value)
 
   if(error) return alert(error.message)
 
