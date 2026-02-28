@@ -67,7 +67,7 @@ const userPosts = ref([])
 const loadingPosts = ref(true)
 
 
-
+const emit = defineEmits(['toggleMobileNav'])
 const sparkCanvas = ref(null)
 
 let createSpark

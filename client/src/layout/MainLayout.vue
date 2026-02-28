@@ -1,18 +1,23 @@
 <template>
   <div class="layout">
     <Sidebar />
-    <div class="center">
-      <router-view />
-      <MobileNav class="mobile-only" />
+    <div :class="['center', { 'no-bottom': hideMobileNav }]">
+      <router-view v-slot="{ Component }">
+        <component :is="Component" @toggleMobileNav="hideMobileNav = $event" />
+      </router-view>
+      <MobileNav v-show="!hideMobileNav" class="mobile-only" />
     </div>
     <RightPanel />
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import Sidebar from "../components/Sidebar.vue"
 import RightPanel from "../components/RightPanel.vue"
 import MobileNav from "../pages/MobileNav.vue";
+
+const hideMobileNav = ref(false)
 </script>
 
 <style scoped>
@@ -47,6 +52,10 @@ import MobileNav from "../pages/MobileNav.vue";
   .center {
     width: 100%;
     padding-bottom: 90px;
+  }
+
+  .no-bottom {
+    padding-bottom: 0 !important;
   }
 }
 /* 📱 МОБИЛА */

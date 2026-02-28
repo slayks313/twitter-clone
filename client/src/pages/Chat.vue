@@ -1,5 +1,5 @@
 <template>
-<div class="chat-layout full-height">
+<div class="chat-layout full-height" :class="{ 'conversation-open': activeUser && isMobile }">
 
     <!-- LEFT -->
 <div 
@@ -285,10 +285,37 @@ onUnmounted(() => window.removeEventListener("click", handleClickOutside))
 
 
 
+let conversationsChannel = null
+
 watch(userId, async (id) => {
   if (!id) return
   await loadConversations()
+  setupConversationsListener()
 }, { immediate: true })
+
+function setupConversationsListener(){
+  if(!userId.value) return
+  
+  if(conversationsChannel){
+    supabase.removeChannel(conversationsChannel)
+  }
+  
+  conversationsChannel = supabase
+    .channel("conversations-" + userId.value)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "conversations",
+        filter: `or(user1.eq.${userId.value},user2.eq.${userId.value})`
+      },
+      (payload) => {
+        loadConversations()
+      }
+    )
+    .subscribe()
+}
 
 
 
@@ -339,10 +366,7 @@ async function deleteChat(){
 
   if(!conversationId.value) return
 
-  await supabase
-    .from("conversations")
-    .delete()
-    .eq("id", conversationId.value)
+  const convIdToDelete = conversationId.value
 
   if(channel){
     await supabase.removeChannel(channel)
@@ -353,6 +377,11 @@ async function deleteChat(){
   activeUser.value = null
   conversationId.value = null
 
+  await supabase
+    .from("conversations")
+    .delete()
+    .eq("id", convIdToDelete)
+
   await loadConversations()
 }
 
@@ -362,6 +391,12 @@ async function openChat(user){
 
   messages.value = []
   activeUser.value = user
+
+  // Удаляем старый channel перед открытием нового
+  if(channel){
+    await supabase.removeChannel(channel)
+    channel = null
+  }
 
   // если уже есть conversationId в conversations — не делай запрос
   const existingLocal = conversations.value.find(c => c.id === user.id)
@@ -379,6 +414,21 @@ async function openChat(user){
 
     if(existing){
       conversationId.value = existing.id
+    } else {
+      // Создаём новую conversation если её нет
+      const { data: newConv, error } = await supabase
+        .from("conversations")
+        .insert({
+          user1: userId.value,
+          user2: user.id
+        })
+        .select("id")
+        .single()
+      
+      if(!error && newConv){
+        conversationId.value = newConv.id
+        await loadConversations()
+      }
     }
   }
 
@@ -386,6 +436,8 @@ async function openChat(user){
   setupRealtime()
 }
 function setupRealtime(){
+
+  if(!conversationId.value) return
 
   if(channel){
     supabase.removeChannel(channel)
@@ -489,6 +541,8 @@ async function sendMessage(){
 
   if(error){
     console.error(error)
+  } else {
+    await loadConversations()
   }
 }
 </script>
@@ -543,7 +597,8 @@ async function sendMessage(){
 
   .chat-layout {
     flex-direction: column;
-    height: calc(100vh - 120px);
+    height: 100vh;
+    min-height: 100dvh;
   }
 
   .chat-list {
@@ -556,8 +611,8 @@ async function sendMessage(){
     height: 100%;
   }
 
-  /* когда открыт диалог — скрываем список */
-  .chat-list:has(+ .chat-window .glass) {
+  /* когда открыт диалог — скрываем список (fallback: Safari не всегда поддерживает :has) */
+  .chat-layout.conversation-open .chat-list {
     display: none;
   }
 

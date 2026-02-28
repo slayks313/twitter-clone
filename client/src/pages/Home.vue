@@ -1,4 +1,5 @@
 <template>
+  <div>
   <div class="space-y-6">
 
 <div class="post-wrapper">
@@ -135,6 +136,7 @@
 </div>
   </div>
   <div ref="scrollTrigger"></div>
+  </div>
 </template>
 
 <script setup>
@@ -250,7 +252,7 @@ onUnmounted(() => {
 
 const content = ref("")
 const posts = ref([])
-
+const emit = defineEmits(['toggleMobileNav'])
 
 const page = ref(0)
 

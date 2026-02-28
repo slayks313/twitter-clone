@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from "vue"
+import { onMounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import { supabase } from "./lib/supabase"
 import { initPresence } from "./composables/usePresence"
@@ -29,11 +29,15 @@ onMounted(() => {
   initPresence()
 })
 
-onMounted(async () => {
-  const { user } = useAuth()
+const { user, ready } = useAuth()
 
-  if(!user.value){
+watch([user, ready], ([newUser, isReady]) => {
+  if (!isReady) return
+  
+  if (!newUser && router.currentRoute.value.path !== "/login" && router.currentRoute.value.path !== "/register") {
     router.push("/login")
+  } else if (newUser && (router.currentRoute.value.path === "/login" || router.currentRoute.value.path === "/register")) {
+    router.push("/")
   }
 })
 </script>
