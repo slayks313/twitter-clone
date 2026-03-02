@@ -164,12 +164,12 @@ v-if="!activeUser || !isMobile"
   :class="msg?.sender_id === userId ? 'justify-end' : 'justify-start'"
 >
   <div
-    class="relative px-3 py-1.5 rounded-2xl max-w-[85%] text-[14px] leading-snug flow-root"
+    class="message-bubble relative px-3 py-1.5 rounded-2xl text-[14px] leading-snug flow-root"
     :class="msg?.sender_id === userId
       ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-md'
       : 'bg-white/10 text-white rounded-bl-md'"
   >
-    <span class="break-words [overflow-wrap:anywhere] whitespace-pre-wrap">
+    <span class="message-text whitespace-pre-wrap">
       {{ msg?.content }}
     </span>
 
@@ -587,6 +587,30 @@ async function sendMessage(){
   margin-right: 12px;
   font-size: 18px;
   opacity: 0.7;
+}
+
+/* Message bubble word-breaking for iOS */
+.message-bubble {
+  max-width: 85%;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  -webkit-word-break: break-word;
+  -webkit-word-wrap: break-word;
+}
+
+.message-text {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  -webkit-word-break: break-word;
+  -webkit-word-wrap: break-word;
+  display: block;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .message-bubble {
+    max-width: 80%;
+  }
 }
 
 /* ========================= */
