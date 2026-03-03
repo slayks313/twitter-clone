@@ -60,10 +60,11 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
 import { useAuth } from "../composables/useAuth"
+
 
 const router = useRouter()
 

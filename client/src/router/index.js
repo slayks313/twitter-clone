@@ -23,6 +23,7 @@ const routes = [
     redirect: "/feed",
     children: [
       { path: "feed", component: Home },
+      { path: "search", component: () => import("../pages/Search.vue") },
       { path: "profile/:id", component: Profile },
       { path: "settings", component: Settings },
       { path: "chat", component: () => import("../pages/Chat.vue") }

@@ -133,6 +133,7 @@ onMounted(async () => {
   background: rgba(255, 255, 255, 0.1);
 }
 
+
 /* ——— Светлая тема ——— */
 @media (prefers-color-scheme: light) {
   .nav:hover {

@@ -2,24 +2,19 @@
   <div>
   <div class="space-y-6">
 
-<div class="post-wrapper">
+<div class="post-wrapper relative">
 
-
-  <!-- отдельная лупа
-  <div class="search-icon">
+  <!-- поле и иконка поиска -->
+  <div class="search-icon-circle absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center" @click="$router.push('/search')">
     <fa icon="magnifying-glass" />
-  </div> -->
-
-
-  <!-- поле -->
-<div class="post-field">
-
-  <input
-    v-model="content"
-    placeholder="Публикация"
-    class="post-input"
-    @keydown.enter="createPost"
-  />
+  </div>
+  <div class="post-field flex-1 flex items-center gap-2 ml-14">
+    <input
+      v-model="content"
+      placeholder="Публикация"
+      class="post-input flex-1 pl-4"
+      @keydown.enter="createPost"
+    />
 
   <!-- превью внутри поля -->
  <div
@@ -56,8 +51,8 @@
   <span v-else>Пост</span>
 </button>
 
-</div>
-
+    </div>
+  
 </div>
 
 <div v-if="isInitialLoading" class="space-y-6">
@@ -394,6 +389,28 @@ if (!content.value.trim() && !imageFiles.value.length) {
   overflow: visible !important;
 }
 
+.search-icon-input {
+  display: none;
+}
+
+.search-icon-circle {
+  width: 48px;
+  height: 48px; /* same as input height */
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+  font-size: 18px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-icon-circle:hover {
+  background: rgba(255,255,255,0.2);
+  opacity: 0.8;
+}
+
 .vue-recycle-scroller__item-view {
   overflow: visible !important;
 }
@@ -544,6 +561,7 @@ if (!content.value.trim() && !imageFiles.value.length) {
   display: flex;
   align-items: center;
   gap: 14px;
+  position: relative;
 }
 
 /* отдельная лупа */
@@ -568,7 +586,7 @@ if (!content.value.trim() && !imageFiles.value.length) {
   align-items: center;
   background: var(--card);
   border-radius: 40px;
-  padding-left: 18px;
+  /* icon moved outside so no left padding needed */
   height: 48px;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.06);
@@ -604,6 +622,12 @@ if (!content.value.trim() && !imageFiles.value.length) {
 @media (max-width: 768px) {
   .space-y-6 {
     padding: 12px;
+  }
+  .search-icon-circle {
+    display: none;
+  }
+  .post-field {
+    margin-left: 0 !important;
   }
 }
 </style>

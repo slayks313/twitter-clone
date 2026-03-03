@@ -7,6 +7,11 @@
           <fa icon="house" />
           <span>Лента</span>
         </router-link>
+        
+           <router-link :to="'/profile/' + userId" class="nav-item">
+          <fa icon="user" />
+          <span>Профиль</span>
+        </router-link>
 
         <router-link to="/chat" class="nav-item">
           <fa icon="comment" />
@@ -18,13 +23,10 @@
           <span>Настройки</span>
         </router-link>
 
-        <router-link :to="'/profile/' + userId" class="nav-item">
-          <fa icon="user" />
-          <span>Профиль</span>
-        </router-link>
+     
       </nav>
 
-      <button class="action-circle" >
+      <button class="action-circle" @click="$router.push('/search')">
         <fa icon="search" />
       </button>
 

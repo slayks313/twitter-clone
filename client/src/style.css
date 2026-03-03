@@ -34,22 +34,9 @@ body {
 .btn-glow:hover {
   transform: scale(1.05);
 }
-.btn-exit {
-  --bg1: #ff2e2e;
-  --bg2: #b30000;
-  --glow: rgba(255, 0, 0, 0.7);
 
-  background: linear-gradient(135deg, var(--bg1), var(--bg2));
-  box-shadow: 0 0 40px var(--glow);
-  color: white;
-  border: none;
-  transition: .25s;
-}
 
-.btn-exit:hover {
-  box-shadow: 0 0 40px var(--glow);
-  transform: scale(1.05);
-}
+
 
 
 /* Дефолт (Blue/Dark) */
