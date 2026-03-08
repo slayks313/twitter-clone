@@ -1,0 +1,9 @@
+{
+  "appId": "com.social.network",
+  "appName": "social-network-test",
+  "webDir": "dist",
+  "server": {
+    "url": "https://social-network-ten-theta.vercel.app",
+    "cleartext": true
+  }
+}

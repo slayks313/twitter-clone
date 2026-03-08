@@ -7,7 +7,30 @@ import { themes } from "./themes"
 import { useAuth } from "./composables/useAuth"
 
 
+
 const router = useRouter()
+
+supabase.auth.onAuthStateChange(async (event, session) => {
+
+  if (!session) return
+
+  const userId = session.user.id
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .single()
+
+  if (!data) {
+    router.push("/setup-profile")
+  } else {
+    router.push("/feed")
+  }
+
+})
+
+
 
 
 

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="post" class="glass p-5 transition ">
+<div ref="postCard" v-if="post" class="glass p-5 transition ">
 
     <!-- Header -->
 <div class="flex items-center justify-between mb-3">
@@ -266,7 +266,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue"
+import { ref, onMounted, onUnmounted, computed } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
 
@@ -290,6 +290,38 @@ const commentsPage = ref(0)
 const commentsLimit = 10
 const hasMoreComments = ref(true)
 const loadingComments = ref(false)
+
+const postCard = ref(null)
+let observer = null
+
+onMounted(() => {
+
+  observer = new IntersectionObserver(async (entries) => {
+
+    entries.forEach(async (entry) => {
+
+      if(entry.isIntersecting){
+
+await supabase
+  .from("post_views")
+  .upsert({
+    user_id: props.currentUserId,
+    post_id: props.post.id
+  })
+
+      }
+
+    })
+
+  }, {
+    threshold: 0.6
+  })
+
+  if(postCard.value){
+    observer.observe(postCard.value)
+  }
+
+})
 
 function toggleComments(){
 
@@ -599,6 +631,12 @@ const shortUser = computed(() => {
 
 const formattedDate = computed(() => {
   return new Date(props.post.created_at).toLocaleString()
+})
+
+onUnmounted(() => {
+  if(observer && postCard.value){
+    observer.unobserve(postCard.value)
+  }
 })
 </script>
 
