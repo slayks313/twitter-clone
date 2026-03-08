@@ -13,9 +13,15 @@
           <span>Профиль</span>
         </router-link>
 
-        <router-link to="/chat" class="nav-item">
+        <router-link to="/chat" class="nav-item relative">
           <fa icon="comment" />
-          <span>Чаты</span> 
+          <span>Чаты</span>
+          <div
+            v-if="totalUnread > 0"
+            class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
+          >
+            {{ totalUnread > 99 ? '99+' : totalUnread }}
+          </div>
         </router-link>
         
         <router-link to="/settings" class="nav-item">
@@ -37,11 +43,13 @@
 <script setup>
 import { computed } from "vue"
 import { useAuth } from "../composables/useAuth"
+import { useUnreadMessages } from "../composables/useUnreadMessages"
 import { useRoute } from "vue-router"
 
 const route = useRoute()
 
 const { user } = useAuth()
+const { totalUnread } = useUnreadMessages()
 const userId = computed(() => user.value?.id)
 </script>
 

@@ -304,10 +304,15 @@ onMounted(() => {
 
 await supabase
   .from("post_views")
-  .upsert({
-    user_id: props.currentUserId,
-    post_id: props.post.id
-  })
+  .upsert(
+    {
+      user_id: props.currentUserId,
+      post_id: props.post.id
+    },
+    {
+      onConflict: "user_id,post_id"
+    }
+  )
 
       }
 

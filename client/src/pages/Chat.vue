@@ -169,6 +169,9 @@ v-if="!activeUser || !isMobile"
       ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-md'
       : 'bg-white/10 text-white rounded-bl-md'"
   >
+    <div v-if="msg?.sender_id !== userId && activeUser" class="text-xs opacity-60 mb-1 font-semibold">
+      {{ activeUser.name }}
+    </div>
     <span class="message-text whitespace-pre-wrap">
       {{ msg?.content }}
     </span>
@@ -219,6 +222,7 @@ import { supabase } from "../lib/supabase"
 import { onMounted, onUnmounted } from "vue"
 import { getOnlineUsers } from "../composables/usePresence"
 import { useAuth } from "../composables/useAuth"
+import { useUnreadMessages } from "../composables/useUnreadMessages"
 import { watch } from "vue"
 
 
@@ -226,6 +230,7 @@ import { watch } from "vue"
 
 const { user } = useAuth()
 const userId = computed(() => user.value?.id)
+const { updateLastRead } = useUnreadMessages()
 
 const users = ref([])
 const messages = ref([])
@@ -434,6 +439,7 @@ async function openChat(user){
 
   await loadMessages()
   setupRealtime()
+  updateLastRead(conversationId.value)
 }
 function setupRealtime(){
 

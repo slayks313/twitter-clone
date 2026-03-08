@@ -30,9 +30,15 @@
         <span>profile</span>
       </router-link>
 
-      <router-link class="nav" to="/chat">
+      <router-link class="nav relative" to="/chat">
         <fa icon="comment" />
         <span>chat</span>
+        <div
+          v-if="totalUnread > 0"
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+        >
+          {{ totalUnread > 99 ? '99+' : totalUnread }}
+        </div>
       </router-link>
     </nav>
 
@@ -43,8 +49,10 @@
 import { supabase } from "../lib/supabase"
 import { ref, onMounted, computed } from "vue"
 import { useAuth } from "../composables/useAuth"
+import { useUnreadMessages } from "../composables/useUnreadMessages"
 
 const { user } = useAuth()
+const { totalUnread } = useUnreadMessages()
 
 const userId = computed(() => user.value?.id)
 
