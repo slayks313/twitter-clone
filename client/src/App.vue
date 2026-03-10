@@ -12,6 +12,7 @@ const router = useRouter()
 
 supabase.auth.onAuthStateChange(async (event, session) => {
 
+  if (event !== "SIGNED_IN") return
   if (!session) return
 
   const userId = session.user.id

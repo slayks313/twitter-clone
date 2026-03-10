@@ -26,7 +26,8 @@ import {
   faTrash,
   faPaperPlane,
   faAnglesDown,
-  faBell 
+  faBell,
+  faDownload
   
 } from '@fortawesome/free-solid-svg-icons'
 
@@ -47,7 +48,8 @@ library.add(
   faTrash,
   faPaperPlane,
   faAnglesDown,
-  faBell
+  faBell,
+  faDownload
   
 )
 

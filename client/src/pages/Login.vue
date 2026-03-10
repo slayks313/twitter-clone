@@ -73,6 +73,11 @@
       <router-link to="/register" class="text-sm opacity-60 block text-center hover:opacity-100 transition-opacity">
         Нет аккаунта? Регистрация
       </router-link>
+      
+      <!-- ссылка на apk-архив для незалогиненных пользователей -->
+      <div class="text-center mt-4">
+        <a href="/app.zip" download class="text-sm underline opacity-70 hover:opacity-100">Скачать мобильное приложение</a>
+      </div>
     </div>
   </div>
 </template>

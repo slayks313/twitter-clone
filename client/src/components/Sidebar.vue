@@ -40,6 +40,13 @@
           {{ totalUnread > 99 ? '99+' : totalUnread }}
         </div>
       </router-link>
+
+      <!-- ссылка для загрузки APK/ZIP из public -->
+      <!-- поместите ваш APK-файл (запакованный в ZIP) в папку public и назовите его app.zip -->
+      <a class="nav" href="/app.zip" download>
+        <fa icon="download" />
+        <span>Скачать приложение</span>
+      </a>
     </nav>
 
   </aside>
