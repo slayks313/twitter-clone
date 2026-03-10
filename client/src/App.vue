@@ -1,68 +1,115 @@
 <script setup>
-import { onMounted, watch } from "vue"
+import { onMounted, onUnmounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import { supabase } from "./lib/supabase"
 import { initPresence } from "./composables/usePresence"
-import { themes } from "./themes" 
+import { themes } from "./themes"
 import { useAuth } from "./composables/useAuth"
-
-
 
 const router = useRouter()
 
-supabase.auth.onAuthStateChange(async (event, session) => {
+// =======================
+// AUTH STATE LISTENER
+// =======================
 
-  if (event !== "SIGNED_IN") return
+const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+
   if (!session) return
 
-  const userId = session.user.id
+  if (event === "SIGNED_IN") {
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .single()
+    const userId = session.user.id
 
-  if (!data) {
-    router.push("/setup-profile")
-  } else {
-    router.push("/feed")
+    const { data } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .single()
+
+    if (!data) {
+      router.replace("/setup-profile")
+    } else {
+      router.replace("/feed")
+    }
+
   }
 
 })
 
-
-
-
-
+// =======================
+// THEME LOAD
+// =======================
 
 onMounted(() => {
+
   const savedThemeName = localStorage.getItem("user-theme")
   const theme = themes[savedThemeName]
-  
+
   if (theme) {
     Object.entries(theme.vars).forEach(([k, v]) => {
       document.documentElement.style.setProperty(k, v)
     })
   }
+
 })
 
-
+// =======================
+// PRESENCE
+// =======================
 
 onMounted(() => {
   initPresence()
 })
 
+// =======================
+// AUTH COMPOSABLE
+// =======================
+
 const { user, ready } = useAuth()
 
 watch([user, ready], ([newUser, isReady]) => {
+
   if (!isReady) return
-  
-  if (!newUser && router.currentRoute.value.path !== "/login" && router.currentRoute.value.path !== "/register") {
-    router.push("/login")
-  } else if (newUser && (router.currentRoute.value.path === "/login" || router.currentRoute.value.path === "/register")) {
-    router.push("/")
+
+  const path = router.currentRoute.value.path
+
+  if (!newUser && path !== "/login" && path !== "/register") {
+    router.replace("/login")
   }
+
+  if (newUser && (path === "/login" || path === "/register")) {
+    router.replace("/")
+  }
+
+})
+
+// =======================
+// TAB VISIBILITY FIX
+// =======================
+
+function handleVisibilityChange() {
+
+  if (document.visibilityState === "visible") {
+    supabase.auth.getSession()
+  }
+
+}
+
+document.addEventListener("visibilitychange", handleVisibilityChange)
+
+// =======================
+// CLEANUP
+// =======================
+
+onUnmounted(() => {
+
+  authListener.subscription.unsubscribe()
+
+  document.removeEventListener(
+    "visibilitychange",
+    handleVisibilityChange
+  )
+
 })
 </script>
 
