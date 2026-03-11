@@ -10,6 +10,9 @@ import Register from "../pages/Register.vue"
 import SetupProfile from "../pages/SetupProfile.vue"
 import { useAuth } from "../composables/useAuth"
 
+let profileLoaded = false
+let hasUsername = false
+
 const routes = [
 
   { path: "/login", component: Login },
@@ -38,9 +41,9 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+
   const { user, ready } = useAuth()
 
-  // если auth ещё не загрузился — пропускаем
   if (!ready.value) return true
 
   // если страница требует авторизации
@@ -48,20 +51,26 @@ router.beforeEach(async (to) => {
     return "/login"
   }
 
-  // если пользователь залогинен — проверяем профиль
-  if (user.value) {
+  // проверяем профиль только один раз
+  if (user.value && !profileLoaded) {
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("username")
       .eq("id", user.value.id)
       .single()
 
-    if (!profile?.username && to.path !== "/setup-profile") {
-      return "/setup-profile"
-    }
+    hasUsername = !!profile?.username
+    profileLoaded = true
+
+  }
+
+  if (user.value && !hasUsername && to.path !== "/setup-profile") {
+    return "/setup-profile"
   }
 
   return true
+
 })
 
 export default router

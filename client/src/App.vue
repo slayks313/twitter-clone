@@ -8,8 +8,9 @@ import { useAuth } from "./composables/useAuth"
 
 const router = useRouter()
 
+
 // =======================
-// AUTH STATE LISTENER
+// AUTH STATE LISTENER (2)
 // =======================
 
 const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -90,12 +91,33 @@ watch([user, ready], ([newUser, isReady]) => {
 function handleVisibilityChange() {
 
   if (document.visibilityState === "visible") {
-    supabase.auth.getSession()
+
+    const currentPath = window.location.pathname
+
+    sessionStorage.setItem("lastRoute", currentPath)
+
+    window.location.reload()
+
   }
 
 }
 
 document.addEventListener("visibilitychange", handleVisibilityChange)
+
+// =======================
+// RESTORE ROUTE AFTER RELOAD
+// =======================
+
+onMounted(() => {
+
+  const lastRoute = sessionStorage.getItem("lastRoute")
+
+  if (lastRoute) {
+    router.replace(lastRoute)
+    sessionStorage.removeItem("lastRoute")
+  }
+
+})
 
 // =======================
 // CLEANUP
@@ -114,5 +136,6 @@ onUnmounted(() => {
 </script>
 
 <template>
+  
   <router-view />
 </template>

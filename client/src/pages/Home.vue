@@ -146,11 +146,11 @@ import {
 import "vue-virtual-scroller/dist/vue-virtual-scroller.css"
 
 import { useAuth } from "../composables/useAuth"
+import { watch } from "vue"
 
 
 
-
-
+const { user } = useAuth()
 const scrollTrigger = ref(null)
 
 onMounted(() => {
@@ -169,6 +169,7 @@ onMounted(() => {
 })
 
 
+
 const imageFiles = ref([])
 const imagePreviews = ref([])
 const currentUserId = ref(null)
@@ -180,6 +181,31 @@ const currentFullImage = ref(null)
 const isInitialLoading = ref(true)
 
 const showFullImage = ref(false)
+
+
+watch(user, async (u) => {
+
+  if (!u) return
+
+  currentUserId.value = u.id
+
+  const { data: myFollows } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", u.id)
+
+  followingSet.value = new Set(myFollows?.map(f => f.following_id))
+
+  const { data: myLikes } = await supabase
+    .from("likes")
+    .select("post_id")
+    .eq("user_id", u.id)
+
+  likedPostsSet.value = new Set(myLikes?.map(l => l.post_id))
+
+  await loadPosts()
+
+}, { immediate: true })
 
 function openFullImage(index) {
   currentFullImage.value = imagePreviews.value[index]
@@ -208,38 +234,7 @@ function removeImage(index) {
 
 let channel
 
-onMounted(async () => {
-  try {
 
-   const { user } = useAuth()
-    currentUserId.value = user.value?.id
-
-    if (currentUserId.value) {
-      const { data: myFollows, error: followsError } = await supabase
-        .from("follows")
-        .select("following_id")
-        .eq("follower_id", currentUserId.value)
-
-      if (followsError) throw followsError
-
-      followingSet.value = new Set(myFollows?.map(f => f.following_id))
-
-      const { data: myLikes, error: likesError } = await supabase
-        .from("likes")
-        .select("post_id")
-        .eq("user_id", currentUserId.value)
-
-      if (likesError) throw likesError
-
-      likedPostsSet.value = new Set(myLikes?.map(l => l.post_id))
-    }
-
-    await loadPosts()
-
-  } catch (e) {
-    console.log("Home mounted error:", e)
-  }
-})
 
 onUnmounted(() => {
   if (channel) supabase.removeChannel(channel)
