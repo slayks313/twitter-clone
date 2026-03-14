@@ -10,15 +10,19 @@ const totalUnread = computed(() =>
   Object.values(unreadCounts).reduce((a, b) => a + b, 0)
 )
 
-function updateLastRead(conversationId) {
+function getUnreadCount(chatKey){
+  return unreadCounts[chatKey] || 0
+}
 
-  if (!user.value || !conversationId) return
+function updateLastRead(chatKey) {
 
-  const key = `lastRead_${user.value.id}_${conversationId}`
+  if (!user.value || !chatKey) return
+
+  const key = `lastRead_${user.value.id}_${chatKey}`
 
   localStorage.setItem(key, new Date().toISOString())
 
-  unreadCounts[conversationId] = 0
+  unreadCounts[chatKey] = 0
 
 }
 
@@ -26,30 +30,50 @@ async function loadUnreadCounts(){
 
   if (!user.value) return
 
-  const { data: convs } = await supabase
-    .from("conversations")
-    .select("id")
-    .or(`user1.eq.${user.value.id},user2.eq.${user.value.id}`)
+  const uid = user.value.id
 
-  if (!convs) return
+  const [{ data: convs }, { data: memberships }] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select("id")
+      .or(`user1.eq.${uid},user2.eq.${uid}`),
+    supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", uid)
+  ])
 
-  const requests = convs.map(async (conv) => {
+  const directIds = (convs || []).map((c) => c.id)
+  const groupIds = (memberships || []).map((m) => m.group_id)
 
-    const key = `lastRead_${user.value.id}_${conv.id}`
+  const requests = [
+    ...directIds.map(async (conversationId) => {
+      const chatKey = `direct:${conversationId}`
+      const lastRead = localStorage.getItem(`lastRead_${uid}_${chatKey}`) || "1970-01-01T00:00:00Z"
 
-    const lastRead =
-      localStorage.getItem(key) || "1970-01-01T00:00:00Z"
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("conversation_id", conversationId)
+        .gt("created_at", lastRead)
+        .neq("sender_id", uid)
 
-    const { count } = await supabase
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .eq("conversation_id", conv.id)
-      .gt("created_at", lastRead)
-      .neq("sender_id", user.value.id)
+      unreadCounts[chatKey] = count || 0
+    }),
+    ...groupIds.map(async (groupId) => {
+      const chatKey = `group:${groupId}`
+      const lastRead = localStorage.getItem(`lastRead_${uid}_${chatKey}`) || "1970-01-01T00:00:00Z"
 
-    unreadCounts[conv.id] = count || 0
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("group_id", groupId)
+        .gt("created_at", lastRead)
+        .neq("sender_id", uid)
 
-  })
+      unreadCounts[chatKey] = count || 0
+    })
+  ]
 
   await Promise.all(requests)
 
@@ -70,5 +94,5 @@ watch(
 )
 
 export function useUnreadMessages(){
-  return { totalUnread, updateLastRead }
+  return { totalUnread, getUnreadCount, updateLastRead, reloadUnreadCounts: loadUnreadCounts }
 }

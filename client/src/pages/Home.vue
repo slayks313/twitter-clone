@@ -17,14 +17,16 @@
     />
 
   <!-- превью внутри поля -->
- <div
-  v-for="(img, index) in imagePreviews"
-  :key="index"
-  class="inline-preview"
->
-  <img :src="img" @click="openFullImage(index)" />
-  <button @click="removeImage(index)">×</button>
-</div>
+  <div v-if="imagePreviews.length" class="inline-preview-row">
+    <div
+      v-for="(img, index) in imagePreviews"
+      :key="index"
+      class="inline-preview"
+    >
+      <img :src="img" @click="openFullImage(index)" />
+      <button @click="removeImage(index)">×</button>
+    </div>
+  </div>
 
   <!-- кнопка загрузки -->
   <label class="upload-btn">
@@ -475,6 +477,16 @@ if (!content.value.trim() && !imageFiles.value.length) {
   flex-shrink: 0;
 }
 
+.inline-preview-row{
+  display: flex;
+  align-items: center;
+  max-width: 150px;
+  overflow-x: auto;
+  padding-right: 4px;
+  gap: 6px;
+  flex-shrink: 1;
+}
+
 .inline-preview img {
   width: 100%;
   height: 100%;
@@ -590,6 +602,7 @@ if (!content.value.trim() && !imageFiles.value.length) {
 /* инпут */
 .post-input {
   flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
   background: transparent;
