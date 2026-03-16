@@ -22,6 +22,11 @@ function applyTheme(t) {
     document.documentElement.style.setProperty(k, v)
   })
   localStorage.setItem("user-theme", t.name)
+  if (t.name === "light") {
+    document.documentElement.classList.add("theme-light")
+  } else {
+    document.documentElement.classList.remove("theme-light")
+  }
 }
 
 

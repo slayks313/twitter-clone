@@ -1,12 +1,11 @@
 <template>
-<div class="chat-layout full-height" :class="{ 'conversation-open': !!activeChatKey && isMobile }">
+<div class="chat-layout" :class="{ 'conversation-open': !!activeChatKey && isMobile }">
 
     <!-- LEFT -->
-<div 
-v-if="!activeUser || !isMobile"
-  class="chat-list glass"
->
-
+    <div
+      v-if="!activeUser || !isMobile"
+      class="chat-list glass"
+    >
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold opacity-80">SchoolHubUz</h2>
 
@@ -23,11 +22,10 @@ v-if="!activeUser || !isMobile"
         v-model="searchQuery"
         @input="searchUsers"
         placeholder="Search username..."
-        class="bg-white/5 rounded-xl px-4 py-3 outline-none focus:bg-white/10 transition mb-4"
+        class="chat-search bg-white/5 rounded-xl px-4 py-3 outline-none focus:bg-white/10 transition mb-4 w-full"
       />
 
-      <!-- users -->
-   <div class="space-y-2 overflow-y-auto">
+      <div class="space-y-2">
 
   <!-- groups -->
   <div v-if="!searchQuery && groups.length" class="pt-1 pb-2">
@@ -124,19 +122,19 @@ v-if="!activeUser || !isMobile"
 
 
     <!-- RIGHT -->
-<div class="chat-window">
+<div class="chat-window" :class="{ 'chat-window-fixed': !!activeChatKey }">
 
 <div 
   v-if="activeChatKey"
   :key="activeChatKey"
-  class="glass flex-1 flex flex-col h-full chat-window-mobile"
+  class="chat-panel glass flex-1 flex flex-col min-h-0"
 >
 
   
 
 
 <!-- header -->
-<div class="p-4 border-b border-white/10 flex items-center justify-between">
+<div class="chat-header flex-shrink-0 p-4 border-b border-white/10 flex items-center justify-between">
 
   <div class="font-semibold text-lg">
    <div class="flex items-center gap-3">
@@ -250,7 +248,7 @@ v-if="!activeUser || !isMobile"
       <!-- messages -->
       <div 
   ref="messagesBox" 
-  class="flex-1 overflow-y-auto p-6 space-y-4 messages-scroll"
+  class="chat-messages flex-1 min-h-0 overflow-y-auto p-6 space-y-4 messages-scroll"
 >
 
 <div
@@ -291,10 +289,10 @@ v-if="!activeUser || !isMobile"
     <div
       class="message-bubble relative px-3 py-1.5 rounded-2xl text-[14px] leading-snug flow-root"
       :class="msg?.sender_id === userId
-        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-md'
-        : 'bg-white/10 text-white rounded-bl-md'"
+        ? 'message-bubble-own'
+        : 'message-bubble-incoming'"
     >
-      <div v-if="activeType === 'group' && msg?.sender_id !== userId" class="text-xs opacity-60 mb-1 font-semibold">
+      <div v-if="activeType === 'group' && msg?.sender_id !== userId" class="message-sender-name">
         {{ memberNameById(msg?.sender_id) }}
       </div>
       <span class="message-text whitespace-pre-wrap">
@@ -310,8 +308,8 @@ v-if="!activeUser || !isMobile"
 
       </div>
 
-      <!-- input -->
-      <div class="p-4 border-t border-white/10 flex gap-3">
+      <!-- input — всегда прижат к низу -->
+      <div class="chat-input-row flex-shrink-0 p-4 border-t border-white/10 flex gap-3">
         <input
           v-model="newMessage"
           @keyup.enter="sendMessage"
@@ -1375,37 +1373,78 @@ function unreadFor(chatKey){
 </script>
 
 <style scoped>
-.full-height {
-  height: 100vh;
-}
-/* убрать scrollbar */
-.messages-scroll::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
-}
-
-.messages-scroll {
-  -ms-overflow-style: none;  /* IE */
-  scrollbar-width: none;     /* Firefox */
-}
 .chat-layout {
   display: flex;
   gap: 24px;
   height: 85vh;
 }
 
-/* список */
 .chat-list {
   width: 33%;
+  min-width: 0;
   padding: 16px;
-  display: flex;
-  flex-direction: column;
 }
 
-/* окно */
+/* ПК: если чатов много — скроллим список внутри, не вылезаем за границы */
+@media (min-width: 769px) {
+  .chat-list {
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .chat-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  .chat-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .chat-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px;
+  }
+  .chat-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.28);
+  }
+}
+
+/* скроллбар только у сообщений (в окне чата), у списка — без своего скролла */
+.messages-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.messages-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .chat-window {
   flex: 1;
+  min-width: 0;
   display: flex;
+}
+
+/* когда открыт диалог — фиксируем высоту окна чата, чтобы инпут был внизу, а сообщения скроллились */
+.chat-window-fixed {
+  height: 85vh;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.chat-panel {
+  min-height: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+.chat-messages {
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-header,
+.chat-input-row {
+  flex-shrink: 0;
 }
 
 /* кнопка назад */
@@ -1538,6 +1577,41 @@ function unreadFor(chatKey){
   -webkit-word-wrap: break-word;
 }
 
+.message-bubble-own {
+  background: linear-gradient(to bottom right, #3b82f6, #4f46e5);
+  color: #fff;
+  border-radius: 1rem 1rem 0.25rem 1rem;
+}
+
+.message-bubble-incoming {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 1rem 1rem 1rem 0.25rem;
+}
+
+.message-sender-name {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+/* светлая тема: входящие сообщения и имя отправителя должны быть хорошо видны */
+:deep(.theme-light) .message-bubble-incoming {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+:deep(.theme-light) .message-sender-name {
+  color: #374151;
+  opacity: 0.9;
+}
+
+:deep(.theme-light) .message-bubble-incoming .message-text,
+:deep(.theme-light) .message-bubble-incoming .float-right {
+  color: #1f2937;
+}
+
 .message-text {
   word-break: break-word;
   overflow-wrap: break-word;
@@ -1552,11 +1626,17 @@ function unreadFor(chatKey){
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
-  opacity: 0.8;
+  opacity: 0.9;
   background: rgba(15,23,42,0.7);
   border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.75);
+  color: rgba(255,255,255,0.85);
   text-align: center;
+}
+
+:deep(.theme-light) .system-chip {
+  background: rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.12);
+  color: #4b5563;
 }
 
 @media (max-width: 768px) {
@@ -1579,12 +1659,18 @@ function unreadFor(chatKey){
 
   .chat-list {
     width: 100%;
-    height: 100%;
+    /* чтобы последний чат не перекрывался нижним navbar'ом */
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
   }
 
   .chat-window {
     width: 100%;
-    height: 100%;
+  }
+
+  /* мобилка: окно чата на весь экран, инпут внизу */
+  .chat-window-fixed {
+    height: 100vh;
+    min-height: 100dvh;
   }
 
   /* когда открыт диалог — скрываем список (fallback: Safari не всегда поддерживает :has) */
@@ -1596,6 +1682,16 @@ function unreadFor(chatKey){
     display: block;
   }
 
+}
+
+/* красивый поиск в списке чатов */
+.chat-search{
+  height: 52px;
+  font-size: 15px;
+  border: 1px solid rgba(255,255,255,0.10);
+}
+.chat-search:focus{
+  border-color: rgba(255,255,255,0.18);
 }
 </style>
 

@@ -90,3 +90,81 @@ body {
 @keyframes shine-text {
   to { background-position: 200% center; }
 }
+
+/* ========== Светлая тема: чат — всё читаемо ========== */
+.theme-light .message-bubble-incoming {
+  background: #d1d5db !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.theme-light .message-bubble-incoming .message-text,
+.theme-light .message-bubble-incoming .float-right,
+.theme-light .message-bubble-incoming .message-sender-name {
+  color: #111827 !important;
+}
+.theme-light .message-sender-name {
+  opacity: 0.9;
+}
+.theme-light .system-chip {
+  background: #e5e7eb !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #374151 !important;
+}
+/* список чатов и шапка */
+.theme-light .chat-list,
+.theme-light .chat-window .glass {
+  color: #111827;
+}
+.theme-light .chat-list h2,
+.theme-light .chat-list .font-medium,
+.theme-light .chat-list .font-semibold,
+.theme-light .chat-window .font-semibold,
+.theme-light .chat-window .text-xs {
+  color: #111827 !important;
+}
+.theme-light .chat-list input,
+.theme-light .chat-window input {
+  background: rgba(0,0,0,0.05) !important;
+  color: #111827 !important;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+.theme-light .chat-window .border-b,
+.theme-light .chat-window .border-t {
+  border-color: rgba(0,0,0,0.1) !important;
+}
+.theme-light .chat-list .border-white\/10,
+.theme-light .chat-list .border-white\/20 {
+  border-color: rgba(0,0,0,0.12) !important;
+}
+.theme-light .chat-list .bg-white\/5,
+.theme-light .chat-list .bg-white\/10 {
+  background: rgba(0,0,0,0.05) !important;
+}
+.theme-light .chat-list .hover\:bg-white\/5:hover,
+.theme-light .chat-list .hover\:bg-white\/10:hover {
+  background: rgba(0,0,0,0.08) !important;
+}
+.theme-light .new-group-btn,
+.theme-light .back-btn {
+  color: #111827;
+  background: rgba(0,0,0,0.06);
+}
+.theme-light .opacity-50,
+.theme-light .opacity-60 {
+  opacity: 0.75;
+}
+.theme-light .chat-window .p-4 {
+  color: #111827;
+}
+.theme-light .chat-window [class*="rounded-lg"] {
+  color: #111827;
+}
+.theme-light .chat-list .text-xs.opacity-50 {
+  color: #4b5563 !important;
+}
+.theme-light .divider {
+  background: rgba(0,0,0,0.1) !important;
+}
+.theme-light .messages-scroll {
+  color: #111827;
+}

@@ -50,6 +50,11 @@ onMounted(() => {
     Object.entries(theme.vars).forEach(([k, v]) => {
       document.documentElement.style.setProperty(k, v)
     })
+    if (savedThemeName === "light") {
+      document.documentElement.classList.add("theme-light")
+    } else {
+      document.documentElement.classList.remove("theme-light")
+    }
   }
 
 })
