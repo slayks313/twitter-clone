@@ -35,6 +35,7 @@
   type="file"
   accept="image/*"
   multiple
+  @click="suppressNextVisibleReload"
   @change="handleImage"
   hidden
 />
@@ -223,10 +224,20 @@ function handleImage(e) {
   const files = Array.from(e.target.files)
   if (!files.length) return
 
+  // если выбор был — флаг уже мог быть "съеден" App.vue, но на всякий случай чистим
+  sessionStorage.removeItem("suppressNextVisibleReload")
+
   files.forEach(file => {
     imageFiles.value.push(file)
     imagePreviews.value.push(URL.createObjectURL(file))
   })
+}
+
+function suppressNextVisibleReload() {
+  // Когда откроется галерея, вкладка станет hidden → visible,
+  // и глобальный handler сделает reload. Это ломает выбор фото.
+  // Поэтому просим App.vue пропустить ОДНУ перезагрузку при следующем visible.
+  sessionStorage.setItem("suppressNextVisibleReload", "1")
 }
 
 function removeImage(index) {

@@ -95,14 +95,20 @@ watch([user, ready], ([newUser, isReady]) => {
 
 function handleVisibilityChange() {
 
+  if (document.visibilityState === "hidden") {
+    sessionStorage.setItem("lastRoute", window.location.pathname)
+  }
+
+  // При возврате в приложение — перезагружаем страницу,
+  // но даём возможность подавить ОДНУ перезагрузку (например, когда открыт file picker).
   if (document.visibilityState === "visible") {
-
-    const currentPath = window.location.pathname
-
-    sessionStorage.setItem("lastRoute", currentPath)
+    const suppressOnce = sessionStorage.getItem("suppressNextVisibleReload") === "1"
+    if (suppressOnce) {
+      sessionStorage.removeItem("suppressNextVisibleReload")
+      return
+    }
 
     window.location.reload()
-
   }
 
 }
@@ -110,7 +116,7 @@ function handleVisibilityChange() {
 document.addEventListener("visibilitychange", handleVisibilityChange)
 
 // =======================
-// RESTORE ROUTE AFTER RELOAD
+// RESTORE ROUTE
 // =======================
 
 onMounted(() => {

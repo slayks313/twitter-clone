@@ -11,17 +11,17 @@
         <div 
           class="h-44 rounded-2xl overflow-hidden border-2 border-dashed border-white/10 relative cursor-pointer hover:border-blue-500/50 transition-colors"
           :style="bannerPreview"
-          @click="$refs.bannerInput.click()"
+          @click="openBannerPicker"
         >
           <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all flex items-center justify-center">
             <span class="text-white text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Сменить баннер</span>
           </div>
         </div>
-        <input type="file" ref="bannerInput" class="hidden" @change="uploadBanner" />
+        <input type="file" ref="bannerInput" class="hidden" @click="suppressNextVisibleReload" @change="uploadBanner" />
       </div>
 
       <div class="flex items-center gap-6">
-        <div class="relative group cursor-pointer" @click="$refs.avatarInput.click()">
+        <div class="relative group cursor-pointer" @click="openAvatarPicker">
           <div class="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white/10 group-hover:ring-blue-500/50 transition-all">
             <img v-if="avatarUrl" :src="avatarUrl" class="w-full h-full object-cover" />
             <div v-else class="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-2xl uppercase">
@@ -38,7 +38,7 @@
           <h3 class="font-bold text-lg">Ваш аватар</h3>
           <p class="text-sm opacity-50">Рекомендуется 400x400px</p>
         </div>
-        <input type="file" ref="avatarInput" class="hidden" @change="uploadAvatar" />
+        <input type="file" ref="avatarInput" class="hidden" @click="suppressNextVisibleReload" @change="uploadAvatar" />
       </div>
 
       <div class="grid gap-6">
@@ -93,6 +93,9 @@ const bio = ref("")
 const avatarUrl = ref(null)
 
 const bannerUrl = ref(null)
+
+const avatarInput = ref(null)
+const bannerInput = ref(null)
 
 
 
@@ -191,6 +194,8 @@ async function uploadAvatar(e){
 
   if(!file) return
 
+  sessionStorage.removeItem("suppressNextVisibleReload")
+
 
 
   const filePath = `${userId.value}/avatar-${Date.now()}.png`
@@ -228,6 +233,8 @@ async function uploadBanner(e){
   const file = e.target.files[0]
 
   if(!file) return
+
+  sessionStorage.removeItem("suppressNextVisibleReload")
 
 
 
@@ -297,6 +304,20 @@ async function save(){
 
   alert("Профиль обновлён")
 
+}
+
+function suppressNextVisibleReload(){
+  sessionStorage.setItem("suppressNextVisibleReload", "1")
+}
+
+function openAvatarPicker(){
+  suppressNextVisibleReload()
+  avatarInput.value?.click()
+}
+
+function openBannerPicker(){
+  suppressNextVisibleReload()
+  bannerInput.value?.click()
 }
 
 </script>
