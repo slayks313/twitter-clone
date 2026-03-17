@@ -64,6 +64,8 @@ import { ref, computed } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
 import { useAuth } from "../composables/useAuth"
+const { user } = useAuth()
+const userId = computed(() => user.value?.id)
 
 
 const router = useRouter()
@@ -74,13 +76,37 @@ const bio = ref("")
 const avatarUrl = ref(null)
 const bannerUrl = ref(null)
 
+import { onMounted } from "vue"
+
+onMounted(() => {
+  const tempAvatar = localStorage.getItem("temp_avatar")
+  const tempBanner = localStorage.getItem("temp_banner")
+
+  if(tempAvatar && !avatarUrl.value){
+    avatarUrl.value = tempAvatar
+  }
+
+  if(tempBanner && !bannerUrl.value){
+    bannerUrl.value = tempBanner
+  }
+})
+
+function saveTempImage(key, file){
+  const reader = new FileReader()
+  reader.onload = () => {
+    localStorage.setItem(key, reader.result)
+  }
+  reader.readAsDataURL(file)
+}
+
 async function uploadAvatar(e){
   const file = e.target.files[0]
   if(!file) return
 
-  const { user } = useAuth()
+  saveTempImage("temp_avatar", file) // 💥 вот это важно
 
-const userId = computed(() => user.value?.id)
+
+
   const filePath = `${userId.value}/avatar-${Date.now()}.png`
 
   await supabase.storage
@@ -98,6 +124,8 @@ async function uploadBanner(e){
   const file = e.target.files[0]
   if(!file) return
 
+  saveTempImage("temp_banner", file)
+
   const { user } = useAuth()
 
   const userId = computed(() => user.value?.id)
@@ -114,7 +142,9 @@ async function uploadBanner(e){
   bannerUrl.value = urlData.publicUrl
 }
 
+
 async function saveProfile(){
+
 
   if(!username.value.trim()){
     return alert("Username обязателен")
@@ -136,6 +166,9 @@ const userId = computed(() => user.value?.id)
     .eq("id", userId.value)
 
   if(error) return alert(error.message)
+
+    localStorage.removeItem("temp_avatar")
+localStorage.removeItem("temp_banner")
 
   router.push("/")
 }

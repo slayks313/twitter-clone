@@ -1,33 +1,42 @@
 <template>
   <div class="min-h-dvh flex items-center justify-center p-4">
-
+    
     <!-- Модальное окно для ошибок -->
-    <div v-if="showErrorModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="closeErrorModal">
+    <div
+      v-if="showErrorModal"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      @click.self="closeErrorModal"
+    >
       <div class="glass p-6 max-w-sm w-full space-y-4 animate-fade-in">
+        
         <div class="flex items-center gap-3 text-red-400">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <h3 class="text-lg font-semibold">Ошибка</h3>
         </div>
+
         <p class="text-sm opacity-80">{{ errorMessage }}</p>
-        <button 
-          class="btn-glow w-full py-2 rounded-xl mt-2" 
+
+        <button
+          class="btn-glow w-full py-2 rounded-xl mt-2"
           @click="closeErrorModal"
         >
           Понятно
         </button>
+
       </div>
     </div>
 
     <div class="glass p-6 sm:p-8 w-full sm:w-80 space-y-4">
+      
       <h2 class="text-xl font-bold">Auth</h2>
 
       <div class="space-y-2">
-        <input 
-          v-model="email" 
-          placeholder="Email" 
-          class="input" 
+        <input
+          v-model="email"
+          placeholder="Email"
+          class="input"
           :class="{ 'border-red-500/50': emailError }"
           @input="emailError = false"
           @keyup.enter="login"
@@ -36,21 +45,21 @@
       </div>
 
       <div class="space-y-2">
-        <input 
-          v-model="password" 
-          type="password" 
-          placeholder="Password" 
+        <input
+          v-model="password"
+          type="password"
+          placeholder="Password"
           class="input"
-          :class="{ 'border-red-500/50': passwordError }" 
+          :class="{ 'border-red-500/50': passwordError }"
           @input="passwordError = false"
           @keyup.enter="login"
         />
         <p v-if="passwordError" class="text-xs text-red-400">Пароль обязателен</p>
       </div>
 
-      <button 
-        class="btn-glow w-full py-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all" 
-        @click="login" 
+      <button
+        class="btn-glow w-full py-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        @click="login"
         :disabled="isLoading"
       >
         <span v-if="isLoading" class="flex items-center justify-center gap-2">
@@ -62,31 +71,38 @@
         </span>
         <span v-else>Login</span>
       </button>
-      <button
-  class="w-full py-2 rounded-xl border border-white/20 flex items-center justify-center gap-2 hover:bg-white/5 transition"
-  @click="loginWithGoogle"
->
-  <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" />
-  Continue with Google
-</button>
 
-      <router-link to="/register" class="text-sm opacity-60 block text-center hover:opacity-100 transition-opacity">
+      <button
+        class="w-full py-2 rounded-xl border border-white/20 flex items-center justify-center gap-2 hover:bg-white/5 transition"
+        @click="loginWithGoogle"
+      >
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" />
+        Continue with Google
+      </button>
+
+      <router-link
+        to="/register"
+        class="text-sm opacity-60 block text-center hover:opacity-100 transition-opacity"
+      >
         Нет аккаунта? Регистрация
       </router-link>
-      
+
       <!-- ссылка на apk-архив для незалогиненных пользователей -->
       <div class="text-center mt-4">
-        <a href="/app.zip" download class="text-sm underline opacity-70 hover:opacity-100">Скачать мобильное приложение</a>
+        <a href="/app.zip" download class="text-sm underline opacity-70 hover:opacity-100">
+          Скачать мобильное приложение
+        </a>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { supabase } from "../lib/supabase"
 import { useRouter } from "vue-router"
-import { watch } from "vue"
+import { useAuth } from "../composables/useAuth"
 
 const email = ref("")
 const password = ref("")
@@ -101,15 +117,9 @@ const passwordError = ref(false)
 const showErrorModal = ref(false)
 const errorMessage = ref("")
 
-import { useAuth } from "../composables/useAuth"
-
 const { user } = useAuth()
 
-watch(user, (newUser) => {
-  if (newUser) {
-    router.push("/")
-  }
-})
+
 
 function closeErrorModal() {
   showErrorModal.value = false
@@ -120,18 +130,20 @@ function showError(message) {
   errorMessage.value = message
   showErrorModal.value = true
 }
+
 async function loginWithGoogle() {
   const { error } = await supabase.auth.signInWithOAuth({
-  provider: "google",
-  options: {
-    redirectTo: "https://social-network-ten-theta.vercel.app"
-  }
-})
+    provider: "google",
+    options: {
+      redirectTo: "https://social-network-ten-theta.vercel.app"
+    }
+  })
 
   if (error) {
     showError(error.message)
   }
 }
+
 async function login() {
   // Валидация полей
   emailError.value = !email.value

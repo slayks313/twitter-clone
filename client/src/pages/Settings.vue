@@ -104,7 +104,13 @@ const emit = defineEmits(["toggleMobileNav"])
 
 
 
+onMounted(() => {
+  const tempAvatar = localStorage.getItem("temp_avatar")
+  const tempBanner = localStorage.getItem("temp_banner")
 
+  if(tempAvatar) avatarUrl.value = tempAvatar
+  if(tempBanner) bannerUrl.value = tempBanner
+})
 
 
 
@@ -114,7 +120,13 @@ const { user } = useAuth()
 
 const userId = computed(() => user.value?.id)
 
-
+function saveTempImage(key, file){
+  const reader = new FileReader()
+  reader.onload = () => {
+    localStorage.setItem(key, reader.result)
+  }
+  reader.readAsDataURL(file)
+}
 
 watch(userId, async (id) => {
 
@@ -134,19 +146,19 @@ watch(userId, async (id) => {
 
 
 
-  if (profile) {
+ if (profile) {
+  name.value = profile.name
+  username.value = profile.username
+  bio.value = profile.bio
 
-    name.value = profile.name
-
-    username.value = profile.username
-
-    bio.value = profile.bio
-
+  if(!localStorage.getItem("temp_avatar")){
     avatarUrl.value = profile.avatar_url
-
-    bannerUrl.value = profile.banner_url
-
   }
+
+  if(!localStorage.getItem("temp_banner")){
+    bannerUrl.value = profile.banner_url
+  }
+}
 
 }, { immediate: true })
 
@@ -189,10 +201,13 @@ const bannerPreview = computed(() => {
 
 
 async function uploadAvatar(e){
+ 
 
   const file = e.target.files[0]
 
   if(!file) return
+
+   saveTempImage("temp_avatar", file)
 
   sessionStorage.removeItem("suppressNextVisibleReload")
 
@@ -229,10 +244,13 @@ async function uploadAvatar(e){
 
 
 async function uploadBanner(e){
+  
 
   const file = e.target.files[0]
 
   if(!file) return
+
+  saveTempImage("temp_banner", file)
 
   sessionStorage.removeItem("suppressNextVisibleReload")
 
@@ -300,7 +318,8 @@ async function save(){
 
   if(error) return alert(error.message)
 
-
+  localStorage.removeItem("temp_avatar")
+  localStorage.removeItem("temp_banner")
 
   alert("Профиль обновлён")
 
@@ -311,7 +330,7 @@ function suppressNextVisibleReload(){
 }
 
 function openAvatarPicker(){
-  suppressNextVisibleReload()
+  sessionStorage.setItem("suppressNextVisibleReload", "1")
   avatarInput.value?.click()
 }
 

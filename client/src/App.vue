@@ -8,17 +8,13 @@ import { useAuth } from "./composables/useAuth"
 
 const router = useRouter()
 
-
 // =======================
 // AUTH STATE LISTENER (2)
 // =======================
-
 const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-
   if (!session) return
 
   if (event === "SIGNED_IN") {
-
     const userId = session.user.id
 
     const { data } = await supabase
@@ -32,17 +28,13 @@ const { data: authListener } = supabase.auth.onAuthStateChange(async (event, ses
     } else {
       router.replace("/feed")
     }
-
   }
-
 })
 
 // =======================
 // THEME LOAD
 // =======================
-
 onMounted(() => {
-
   const savedThemeName = localStorage.getItem("user-theme")
   const theme = themes[savedThemeName]
 
@@ -50,19 +42,18 @@ onMounted(() => {
     Object.entries(theme.vars).forEach(([k, v]) => {
       document.documentElement.style.setProperty(k, v)
     })
+
     if (savedThemeName === "light") {
       document.documentElement.classList.add("theme-light")
     } else {
       document.documentElement.classList.remove("theme-light")
     }
   }
-
 })
 
 // =======================
 // PRESENCE
 // =======================
-
 onMounted(() => {
   initPresence()
 })
@@ -70,11 +61,9 @@ onMounted(() => {
 // =======================
 // AUTH COMPOSABLE
 // =======================
-
 const { user, ready } = useAuth()
 
 watch([user, ready], ([newUser, isReady]) => {
-
   if (!isReady) return
 
   const path = router.currentRoute.value.path
@@ -84,33 +73,21 @@ watch([user, ready], ([newUser, isReady]) => {
   }
 
   if (newUser && (path === "/login" || path === "/register")) {
-    router.replace("/")
+    router.replace("/feed")
   }
-
 })
 
 // =======================
 // TAB VISIBILITY FIX
 // =======================
-
 function handleVisibilityChange() {
-
   if (document.visibilityState === "hidden") {
     sessionStorage.setItem("lastRoute", window.location.pathname)
   }
 
-  // При возврате в приложение — перезагружаем страницу,
-  // но даём возможность подавить ОДНУ перезагрузку (например, когда открыт file picker).
   if (document.visibilityState === "visible") {
-    const suppressOnce = sessionStorage.getItem("suppressNextVisibleReload") === "1"
-    if (suppressOnce) {
-      sessionStorage.removeItem("suppressNextVisibleReload")
-      return
-    }
-
     window.location.reload()
   }
-
 }
 
 document.addEventListener("visibilitychange", handleVisibilityChange)
@@ -118,35 +95,24 @@ document.addEventListener("visibilitychange", handleVisibilityChange)
 // =======================
 // RESTORE ROUTE
 // =======================
-
 onMounted(() => {
-
   const lastRoute = sessionStorage.getItem("lastRoute")
 
   if (lastRoute) {
     router.replace(lastRoute)
     sessionStorage.removeItem("lastRoute")
   }
-
 })
 
 // =======================
 // CLEANUP
 // =======================
-
 onUnmounted(() => {
-
   authListener.subscription.unsubscribe()
-
-  document.removeEventListener(
-    "visibilitychange",
-    handleVisibilityChange
-  )
-
+  document.removeEventListener("visibilitychange", handleVisibilityChange)
 })
 </script>
 
 <template>
-  
   <router-view />
 </template>

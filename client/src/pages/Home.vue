@@ -35,7 +35,6 @@
   type="file"
   accept="image/*"
   multiple
-  @click="suppressNextVisibleReload"
   @change="handleImage"
   hidden
 />
@@ -138,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue"
+import { ref, onMounted, onUnmounted, watch } from "vue"
 import { supabase } from "../lib/supabase"
 import TweetCard from "../components/TweetCard.vue"
 import {
@@ -149,67 +148,106 @@ import {
 import "vue-virtual-scroller/dist/vue-virtual-scroller.css"
 
 import { useAuth } from "../composables/useAuth"
-import { watch } from "vue"
-
-
 
 const { user } = useAuth()
 const scrollTrigger = ref(null)
 
-onMounted(() => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting) {
-        loadPosts()
-      }
-    },
-    { threshold: 1 }
-  )
-
-  if (scrollTrigger.value) {
-    observer.observe(scrollTrigger.value)
-  }
-})
-
-
-
+// ── Состояние ──
+const content = ref("")
 const imageFiles = ref([])
 const imagePreviews = ref([])
 const currentUserId = ref(null)
 const followingSet = ref(new Set())
 const likedPostsSet = ref(new Set())
-const imagePreview = ref(null)
 const isPosting = ref(false)
 const currentFullImage = ref(null)
 const isInitialLoading = ref(true)
-
 const showFullImage = ref(false)
+const posts = ref([])
+const page = ref(0)
+const pageSize = 10
+const isLoadingMore = ref(false)
+const hasMore = ref(true)
+let channel
 
+const emit = defineEmits(['toggleMobileNav'])
 
+// ── localStorage черновик ──
+const DRAFT_KEY = "post_draft"
+
+function saveDraft() {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      content: content.value,
+      images: imagePreviews.value  // здесь уже base64
+    }))
+  } catch (e) {
+    // переполнен — игнорируем
+  }
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY)
+}
+
+async function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return
+    const draft = JSON.parse(raw)
+    if (draft.content) content.value = draft.content
+    if (Array.isArray(draft.images) && draft.images.length) {
+      for (const dataUrl of draft.images) {
+        if (!dataUrl || !dataUrl.startsWith("data:")) continue
+        imagePreviews.value.push(dataUrl)
+        // base64 → Blob → File, чтобы можно было загрузить в Supabase
+        const res = await fetch(dataUrl)
+        const blob = await res.blob()
+        const ext = blob.type.split("/")[1] || "jpg"
+        const file = new File([blob], `draft-${Date.now()}.${ext}`, { type: blob.type })
+        imageFiles.value.push(file)
+      }
+    }
+  } catch (e) {
+    clearDraft()
+  }
+}
+
+// Восстанавливаем черновик при старте
+restoreDraft()
+
+// ── Infinite scroll ──
+onMounted(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadPosts()
+    },
+    { threshold: 1 }
+  )
+  if (scrollTrigger.value) observer.observe(scrollTrigger.value)
+})
+
+// ── Загрузка данных пользователя ──
 watch(user, async (u) => {
-
   if (!u) return
-
   currentUserId.value = u.id
 
   const { data: myFollows } = await supabase
     .from("follows")
     .select("following_id")
     .eq("follower_id", u.id)
-
   followingSet.value = new Set(myFollows?.map(f => f.following_id))
 
   const { data: myLikes } = await supabase
     .from("likes")
     .select("post_id")
     .eq("user_id", u.id)
-
   likedPostsSet.value = new Set(myLikes?.map(l => l.post_id))
 
   await loadPosts()
-
 }, { immediate: true })
 
+// ── Полноэкранный просмотр ──
 function openFullImage(index) {
   currentFullImage.value = imagePreviews.value[index]
   showFullImage.value = true
@@ -220,56 +258,44 @@ function closeFullImage() {
   currentFullImage.value = null
 }
 
-function handleImage(e) {
-  const files = Array.from(e.target.files)
-  if (!files.length) return
-
-  // если выбор был — флаг уже мог быть "съеден" App.vue, но на всякий случай чистим
-  sessionStorage.removeItem("suppressNextVisibleReload")
-
-  files.forEach(file => {
-    imageFiles.value.push(file)
-    imagePreviews.value.push(URL.createObjectURL(file))
+// ── Выбор изображений ──
+// Конвертируем File → base64 и сразу сохраняем черновик в localStorage
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
   })
 }
 
-function suppressNextVisibleReload() {
-  // Когда откроется галерея, вкладка станет hidden → visible,
-  // и глобальный handler сделает reload. Это ломает выбор фото.
-  // Поэтому просим App.vue пропустить ОДНУ перезагрузку при следующем visible.
-  sessionStorage.setItem("suppressNextVisibleReload", "1")
+async function handleImage(e) {
+  const files = Array.from(e.target.files)
+  if (!files.length) return
+
+  for (const file of files) {
+    try {
+      const base64 = await fileToBase64(file)
+      imagePreviews.value.push(base64)
+      imageFiles.value.push(file)
+    } catch (err) {
+      console.error("Ошибка чтения файла:", err)
+    }
+  }
+
+  // Сохраняем черновик (превью уже base64 — можно хранить в localStorage)
+  saveDraft()
 }
 
 function removeImage(index) {
   imageFiles.value.splice(index, 1)
   imagePreviews.value.splice(index, 1)
+  saveDraft()
 }
 
-let channel
-
-
-
-onUnmounted(() => {
-  if (channel) supabase.removeChannel(channel)
-})
-
-const content = ref("")
-const posts = ref([])
-const emit = defineEmits(['toggleMobileNav'])
-
-const page = ref(0)
-
-const pageSize = 10
-const lastCursor = ref(null)
-const isLoadingMore = ref(false)
-const hasMore = ref(true)
-
+// ── Лента ──
 async function loadPosts() {
-
-  if (page.value === 0) {
-  isInitialLoading.value = true
-}
-
+  if (page.value === 0) isInitialLoading.value = true
   if (isLoadingMore.value) return
   if (!currentUserId.value) return
 
@@ -290,6 +316,7 @@ async function loadPosts() {
 
   if (!data || data.length === 0) {
     isLoadingMore.value = false
+    isInitialLoading.value = false
     return
   }
 
@@ -298,11 +325,8 @@ async function loadPosts() {
     post_images: (post.post_images || []).filter(i => i?.image_url)
   }))
 
-  // 🔥 добавляем, а не перезаписываем
   posts.value.push(...cleaned)
-
   page.value++
-
   isLoadingMore.value = false
   isInitialLoading.value = false
 }
@@ -312,84 +336,81 @@ function updateFollowing(targetId, isNowFollowing) {
   else followingSet.value.delete(targetId)
 }
 
+// ── Создание поста ──
 async function createPost() {
   if (isPosting.value) return
-isPosting.value = true
+  isPosting.value = true
 
-if (!content.value.trim() && !imageFiles.value.length) {
-  isPosting.value = false
-  return
-}
+  if (!content.value.trim() && !imageFiles.value.length) {
+    isPosting.value = false
+    return
+  }
 
   const { data: userData } = await supabase.auth.getUser()
   const user = userData.user
-
   if (!user) return
 
   // 1️⃣ создаём пост
   const { data: postData, error: postError } = await supabase
     .from("posts")
-    .insert({
-      content: content.value,
-      user_id: user.id
-    })
+    .insert({ content: content.value, user_id: user.id })
     .select()
     .single()
 
   if (postError) {
     alert(postError.message)
+    isPosting.value = false
     return
   }
 
   const postId = postData.id
 
   await supabase.rpc("add_post_hashtags", {
-  p_post_id: postId,
-  p_content: content.value
-})
+    p_post_id: postId,
+    p_content: content.value
+  })
 
-  // 2️⃣ если есть картинки — загружаем
+  // 2️⃣ загружаем картинки
   for (const file of imageFiles.value) {
-
     const fileExt = file.name.split('.').pop()
     const filePath = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`
 
-    // upload в storage
     const { error: uploadError } = await supabase.storage
       .from("post-images")
       .upload(filePath, file)
 
     if (uploadError) {
       alert(uploadError.message)
+      isPosting.value = false
       return
     }
 
-    const { data } = supabase.storage
-      .from("post-images")
-      .getPublicUrl(filePath)
+    const { data } = supabase.storage.from("post-images").getPublicUrl(filePath)
 
-    // 3️⃣ сохраняем ссылку в post_images
     const { error: imageInsertError } = await supabase
       .from("post_images")
-      .insert({
-        post_id: postId,
-        image_url: data.publicUrl
-      })
+      .insert({ post_id: postId, image_url: data.publicUrl })
 
     if (imageInsertError) {
       alert(imageInsertError.message)
+      isPosting.value = false
       return
     }
   }
 
-  // 4️⃣ очищаем
+  // 3️⃣ очищаем поле и черновик
   content.value = ""
   imageFiles.value = []
   imagePreviews.value = []
+  clearDraft()
 
- loadPosts()
+  loadPosts()
   isPosting.value = false
 }
+
+onUnmounted(() => {
+  if (channel) supabase.removeChannel(channel)
+})
 </script>
 
 <style scoped>
