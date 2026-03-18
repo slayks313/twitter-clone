@@ -35,6 +35,9 @@
         <fa icon="user-group" />
       </div>
     </div>
+    <router-link to="/feed" class="feed-btn">
+  <img src="/logo.png" class="feed-logo" alt="logo" />
+</router-link>
 
   </aside>
 </template>
@@ -77,6 +80,29 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.feed-btn {
+  margin-top: auto; /* ПРИЖИМАЕТ ВНИЗ */
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+  text-decoration: none;
+}
+
+.feed-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 12px var(--glow);
+}
+
+.feed-logo {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
 .right-panel {
   width: 72px;
   flex-shrink: 0;
