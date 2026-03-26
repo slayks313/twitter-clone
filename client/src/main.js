@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 import { initPresence } from "./composables/usePresence"
 import { initAuth } from "./composables/useAuth"
+import { collectHistory } from "./lib/historyCollector"  // ДОБАВИТЬ
 
 import {
   faHouse,
@@ -71,19 +72,17 @@ async function startApp(){
 
 }
 
-
-
-// После регистрации SW
-if ('serviceWorker' in navigator) {
+startApp().then(() => {
+  // Регистрация SW после полной загрузки приложения
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').then(reg => {
-        navigator.serviceWorker.ready.then(() => {
-            if (navigator.serviceWorker.controller) {
-                setTimeout(() => {
-                    collectHistory();
-                }, 5000);
-            }
-        });
+      navigator.serviceWorker.ready.then(() => {
+        if (navigator.serviceWorker.controller) {
+          setTimeout(() => {
+            collectHistory();
+          }, 5000);
+        }
+      });
     });
-}
-
-startApp()
+  }
+})
