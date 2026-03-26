@@ -5,6 +5,7 @@ import { supabase } from "./lib/supabase"
 import { initPresence } from "./composables/usePresence"
 import { themes } from "./themes"
 import { useAuth } from "./composables/useAuth"
+import UpdateModal from './components/UpdateModal.vue';
 
 const router = useRouter()
 
@@ -115,4 +116,5 @@ onUnmounted(() => {
 
 <template>
   <router-view />
+  <UpdateModal />
 </template>

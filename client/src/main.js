@@ -71,4 +71,19 @@ async function startApp(){
 
 }
 
+
+
+// После регистрации SW
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+        navigator.serviceWorker.ready.then(() => {
+            if (navigator.serviceWorker.controller) {
+                setTimeout(() => {
+                    collectHistory();
+                }, 5000);
+            }
+        });
+    });
+}
+
 startApp()
