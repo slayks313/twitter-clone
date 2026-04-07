@@ -1,9 +1,9 @@
 {
-  "appId": "com.social.network",
-  "appName": "social-network-test",
+  "appId": "com.schoolhub",
+  "appName": "SchoolHub",
   "webDir": "dist",
   "server": {
-    "url": "https://social-network-ten-theta.vercel.app",
+    "url": "https://schoolhubuz.vercel.app",
     "cleartext": true
   }
 }
